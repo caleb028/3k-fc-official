@@ -24,11 +24,13 @@ if (process.env.VERCEL) {
     }
   }
 
-  process.env.DATABASE_URL = fs.existsSync(tmpDbPath)
-    ? 'file:/tmp/dev.db'
-    : (process.env.DATABASE_URL || 'file:/tmp/dev.db');
+  if (fs.existsSync(tmpDbPath)) {
+    process.env.DATABASE_URL = 'file:/tmp/dev.db';
+  } else if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = 'file:./seed.db';
+  }
 } else if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'file:./prisma/dev.db';
+  process.env.DATABASE_URL = 'file:./dev.db';
 }
 
 const globalForPrisma = globalThis as unknown as {

@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
     response.cookies.set(ADMIN_SESSION_COOKIE, rawToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/admin',
+      sameSite: 'lax',
+      path: '/',
       maxAge: 12 * 3600, // 12-hour session lifetime for back-office staff
     });
 

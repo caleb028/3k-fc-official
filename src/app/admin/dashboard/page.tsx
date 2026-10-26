@@ -41,24 +41,24 @@ export default async function AdminDashboardPage() {
     activeSponsorsCount,
     settings,
   ] = await Promise.all([
-    prisma.fixture.count({ where: { status: 'SCHEDULED' } }),
-    prisma.fixture.count({ where: { status: 'FULL_TIME' } }),
-    prisma.article.count({ where: { status: 'PUBLISHED' } }),
-    prisma.article.count({ where: { status: 'DRAFT' } }),
-    prisma.ticket.count({ where: { status: { in: ['VALID', 'REDEEMED'] } } }),
+    prisma.fixture.count({ where: { status: 'SCHEDULED' } }).catch(() => 0),
+    prisma.fixture.count({ where: { status: 'FULL_TIME' } }).catch(() => 0),
+    prisma.article.count({ where: { status: 'PUBLISHED' } }).catch(() => 0),
+    prisma.article.count({ where: { status: 'DRAFT' } }).catch(() => 0),
+    prisma.ticket.count({ where: { status: { in: ['VALID', 'REDEEMED'] } } }).catch(() => 0),
     prisma.ticketOrder.aggregate({
       where: { status: 'PAID' },
       _sum: { totalKesCents: true },
-    }),
-    prisma.paymentTransaction.count({ where: { status: 'PENDING' } }),
-    prisma.shopOrder.count(),
-    prisma.membership.count({ where: { status: 'ACTIVE' } }),
+    }).catch(() => ({ _sum: { totalKesCents: 0 } })),
+    prisma.paymentTransaction.count({ where: { status: 'PENDING' } }).catch(() => 0),
+    prisma.shopOrder.count().catch(() => 0),
+    prisma.membership.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
     prisma.donation.aggregate({
       where: { status: 'CONFIRMED' },
       _sum: { amountKesCents: true },
-    }),
-    prisma.sponsor.count({ where: { isPublished: true } }),
-    prisma.clubSettings.findUnique({ where: { id: 'default' } }),
+    }).catch(() => ({ _sum: { amountKesCents: 0 } })),
+    prisma.sponsor.count({ where: { isPublished: true } }).catch(() => 0),
+    prisma.clubSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
   ]);
 
   const totalTicketKesCents = confirmedTicketRevenue._sum.totalKesCents || 0;

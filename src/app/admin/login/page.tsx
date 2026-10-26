@@ -28,8 +28,8 @@ export default function AdminLoginPage() {
       if (!res.ok) {
         setErrorMsg(data.error || 'Authentication rejected.');
       } else {
-        router.push('/admin/dashboard');
-        router.refresh();
+        // Direct document navigation guarantees browser sends newly set session cookie cleanly
+        window.location.href = '/admin/dashboard';
       }
     } catch {
       setErrorMsg('Network error while signing in to back-office.');
