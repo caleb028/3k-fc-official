@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    '/**': ['./prisma/seed.db'],
+  },
   async headers() {
     return [
       {

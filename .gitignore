@@ -6,6 +6,7 @@ build/
 .env.local
 .env.*.local
 *.db
+!prisma/seed.db
 *.db-journal
 coverage/
 .vercel/

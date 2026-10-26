@@ -3,22 +3,32 @@ import fs from 'fs';
 import path from 'path';
 
 // On Vercel serverless functions, files outside /tmp are read-only.
-// If using SQLite (file:), copy the build-seeded dev.db to /tmp so writes (sessions, audits) succeed.
+// Copy the bundled seed.db to /tmp/dev.db on cold start so writes (sessions, audits, admin) succeed.
 if (process.env.VERCEL) {
   const tmpDbPath = '/tmp/dev.db';
-  const bundledDbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+  const candidateSeeds = [
+    path.join(process.cwd(), 'prisma', 'seed.db'),
+    path.join(process.cwd(), 'prisma', 'dev.db'),
+  ];
 
-  if (!fs.existsSync(tmpDbPath) && fs.existsSync(bundledDbPath)) {
-    try {
-      fs.copyFileSync(bundledDbPath, tmpDbPath);
-    } catch {
-      // ignore if copy fails
+  if (!fs.existsSync(tmpDbPath)) {
+    for (const cand of candidateSeeds) {
+      if (fs.existsSync(cand)) {
+        try {
+          fs.copyFileSync(cand, tmpDbPath);
+          break;
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 
-  if (fs.existsSync(tmpDbPath)) {
-    process.env.DATABASE_URL = 'file:/tmp/dev.db';
-  }
+  process.env.DATABASE_URL = fs.existsSync(tmpDbPath)
+    ? 'file:/tmp/dev.db'
+    : (process.env.DATABASE_URL || 'file:/tmp/dev.db');
+} else if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db';
 }
 
 const globalForPrisma = globalThis as unknown as {
