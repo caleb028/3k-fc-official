@@ -98,6 +98,14 @@ export function PublicHeader({
           {/* Quick Links & Language Switcher */}
           <div className="flex items-center gap-4 text-[11px] font-bold">
             <Link
+              href="/partners"
+              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-[#0B1B36] text-[#FFB800] text-[10px] font-black uppercase tracking-wider hover:opacity-90 transition border border-[#FFB800]/25"
+              title="Mozzart Bet Kenya — Principal Partner"
+            >
+              MOZZART
+            </Link>
+
+            <Link
               href="/videos"
               className="inline-flex items-center gap-1 text-slate-600 hover:text-club-secondary transition"
             >

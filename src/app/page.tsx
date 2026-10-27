@@ -486,28 +486,42 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 6. OFFICIAL COMMERCIAL PARTNERS (Clean Minimalist Strip) */}
-      {sponsors.length > 0 && (
-        <section className="py-8 bg-slate-50 border-t border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* 6. OFFICIAL COMMERCIAL PARTNERS (Clean Minimalist Strip with Principal Sponsor Showcase) */}
+      <section className="py-8 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
               <span className="athletic-label text-xs font-bold text-slate-500">
-                Official Commercial Partners
+                Principal Sponsor:
               </span>
-              <div className="flex flex-wrap items-center gap-6">
+              <Link
+                href="/partners"
+                className="sponsor-badge-mozzart text-sm px-3.5 py-1 shadow-xs hover:scale-105 transition-transform"
+                title="Mozzart Bet Kenya — Principal Partner"
+              >
+                MOZZART
+              </Link>
+              <span className="text-xs text-slate-600 font-semibold hidden sm:inline">
+                Mozzart Bet Kenya
+              </span>
+            </div>
+
+            {sponsors.length > 0 && (
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="athletic-label text-xs text-slate-400">Partners:</span>
                 {sponsors.map((sp) => (
                   <span
                     key={sp.id}
-                    className="editorial-headline text-sm font-bold text-slate-700 hover:text-club-primary transition"
+                    className="editorial-headline text-xs md:text-sm font-bold text-slate-700 hover:text-club-primary transition"
                   >
                     {sp.businessName}
                   </span>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }

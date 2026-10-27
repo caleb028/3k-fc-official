@@ -1,12 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700;1,900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-orbitron: 'Orbitron', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-barlow: 'Barlow', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Mozzart Corporate Rounded Athletic Sans Typography (Rubik / Mozzart Sans / Nunito) */
+  --font-display: 'Rubik', 'Nunito', 'Arial Rounded MT Bold', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Rubik', 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-orbitron: var(--font-display);
+  --font-barlow: var(--font-sans);
+
+  /* Mozzart Bet Sponsor Involvement Accent Colors */
+  --sponsor-mozzart-blue: #0B1B36;
+  --sponsor-mozzart-gold: #FFB800;
 
   /* Official 3K FC Crest Major Colors: Royal Blue & Crimson Red (Blaugrana Heritage) */
   --club-primary: #E11D2A;
@@ -43,7 +50,7 @@ html {
 body {
   background-color: #FFFFFF;
   color: #0F172A;
-  font-family: var(--font-barlow), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -54,9 +61,9 @@ body {
   outline-offset: 2px;
 }
 
-/* High-Impact Geometric Athletic Display Typography (from reference image) */
+/* High-Impact Geometric Athletic Display Typography (Mozzart Corporate Rounded Style) */
 .editorial-headline {
-  font-family: var(--font-orbitron), system-ui, sans-serif;
+  font-family: var(--font-display), system-ui, sans-serif;
   text-transform: uppercase;
   letter-spacing: -0.01em;
   font-weight: 800;
@@ -64,7 +71,7 @@ body {
 }
 
 .serif-headline {
-  font-family: var(--font-orbitron), system-ui, sans-serif;
+  font-family: var(--font-display), system-ui, sans-serif;
   letter-spacing: -0.01em;
   line-height: 1.1;
   text-transform: uppercase;
@@ -72,10 +79,25 @@ body {
 }
 
 .athletic-label {
-  font-family: var(--font-orbitron), system-ui, sans-serif;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: 700;
+}
+
+/* Authentic Mozzart Sponsor Involvement Badge */
+.sponsor-badge-mozzart {
+  font-family: var(--font-display), system-ui, sans-serif;
+  background-color: #0B1B36;
+  color: #FFB800;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 184, 0, 0.25);
 }
 
 /* FC Barcelona Micro-Motions & Interactive Styling */

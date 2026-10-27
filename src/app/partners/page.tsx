@@ -44,9 +44,16 @@ export default async function PartnersPage() {
                 </span>
               </div>
 
-              <h2 className="editorial-headline font-black text-2xl md:text-3xl text-slate-900">
-                {sp.businessName}
-              </h2>
+              <div className="flex flex-wrap items-center gap-3">
+                {sp.businessName.toLowerCase().includes('mozzart') && (
+                  <span className="sponsor-badge-mozzart text-sm px-3 py-1">
+                    MOZZART
+                  </span>
+                )}
+                <h2 className="editorial-headline font-black text-2xl md:text-3xl text-slate-900">
+                  {sp.businessName}
+                </h2>
+              </div>
 
               <p className="text-sm text-slate-700 mt-3 leading-relaxed">
                 {sp.descriptionEn}

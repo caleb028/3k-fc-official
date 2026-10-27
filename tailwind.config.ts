@@ -32,9 +32,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
-        sans: ['var(--font-barlow)', 'system-ui', 'sans-serif'],
-        condensed: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Rubik', 'Nunito', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Rubik', 'Nunito', 'system-ui', 'sans-serif'],
+        condensed: ['var(--font-display)', 'Rubik', 'Nunito', 'system-ui', 'sans-serif'],
       },
     },
   },

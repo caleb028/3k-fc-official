@@ -17,16 +17,25 @@ export function PublicFooter() {
       {/* Sponsor & Partner Verification Banner */}
       <div className="border-b border-slate-200 bg-white py-8 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="athletic-label text-xs font-bold text-club-primary">
-              Commercial &amp; Community Partnerships
-            </p>
-            <h3 className="editorial-headline font-bold text-lg text-slate-900 mt-1">
-              Mozzart Bet Kenya • Principal Partner Showcase
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Note: Principal sponsorship status displayed subject to confirmation of the current 2026/27 sponsorship agreement.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Link
+              href="/partners"
+              className="sponsor-badge-mozzart text-lg md:text-xl px-4 py-2 shadow-sm hover:scale-105 transition-transform"
+              title="Mozzart Bet Kenya — Principal Partner"
+            >
+              MOZZART
+            </Link>
+            <div>
+              <p className="athletic-label text-xs font-bold text-club-primary">
+                Commercial &amp; Community Partnerships
+              </p>
+              <h3 className="editorial-headline font-black text-lg text-slate-900 mt-0.5">
+                Mozzart Bet Kenya • Principal Partner Showcase
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Official commercial partner of 3K FC Embu for the 2026/27 FKF Premier League season.
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
