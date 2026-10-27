@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
 import { FixturesAdminClient } from '@/components/admin/FixturesAdminClient';
+import { syncFlashscoreMatchweekFixture } from '@/lib/flashscore';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,17 @@ export default async function AdminFixturesPage() {
     redirect('/admin/dashboard');
   }
 
+  // Ensure fresh upcoming fixtures directly fetched from Flashscore (purging any past fixtures)
+  await syncFlashscoreMatchweekFixture().catch(() => null);
+
+  const pastCutoff = new Date(Date.now() - 3 * 3600 * 1000);
+
   const [fixtures, clubs, competitions] = await Promise.all([
     prisma.fixture.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'LIVE', 'HALF_TIME'] },
+        kickoffAt: { gte: pastCutoff },
+      },
       orderBy: { kickoffAt: 'asc' },
       include: {
         competition: true,

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
 import { NewsAdminClient } from '@/components/admin/NewsAdminClient';
+import { syncFacebookTeamNews } from '@/lib/facebook';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,9 @@ export default async function AdminNewsPage() {
   } catch {
     redirect('/admin/dashboard');
   }
+
+  // Automatically ensure team news from official Facebook page is synchronized
+  await syncFacebookTeamNews().catch(() => null);
 
   const [articles, categories] = await Promise.all([
     prisma.article.findMany({

@@ -13,10 +13,15 @@ import {
   TrendingUp,
   ArrowRight,
   ScanLine,
+  ExternalLink,
+  RefreshCw,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { formatKes } from '@/lib/money';
+import { syncFlashscoreMatchweekFixture } from '@/lib/flashscore';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +30,11 @@ export default async function AdminDashboardPage() {
   if (!user || !user.isStaff) {
     redirect('/admin/login');
   }
+
+  // Ensure fresh upcoming fixtures directly fetched from Flashscore (purging any past fixtures)
+  await syncFlashscoreMatchweekFixture().catch(() => null);
+
+  const pastCutoff = new Date(Date.now() - 3 * 3600 * 1000);
 
   // Live database-backed metrics (Section 20: Never use hardcoded demo statistics)
   const [
@@ -40,8 +50,14 @@ export default async function AdminDashboardPage() {
     confirmedDonationsTotal,
     activeSponsorsCount,
     settings,
+    upcomingFixtures,
   ] = await Promise.all([
-    prisma.fixture.count({ where: { status: 'SCHEDULED' } }).catch(() => 0),
+    prisma.fixture.count({
+      where: {
+        status: { in: ['SCHEDULED', 'LIVE', 'HALF_TIME'] },
+        kickoffAt: { gte: pastCutoff },
+      },
+    }).catch(() => 0),
     prisma.fixture.count({ where: { status: 'FULL_TIME' } }).catch(() => 0),
     prisma.article.count({ where: { status: 'PUBLISHED' } }).catch(() => 0),
     prisma.article.count({ where: { status: 'DRAFT' } }).catch(() => 0),
@@ -59,6 +75,19 @@ export default async function AdminDashboardPage() {
     }).catch(() => ({ _sum: { amountKesCents: 0 } })),
     prisma.sponsor.count({ where: { isPublished: true } }).catch(() => 0),
     prisma.clubSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
+    prisma.fixture.findMany({
+      where: {
+        status: { in: ['SCHEDULED', 'LIVE', 'HALF_TIME'] },
+        kickoffAt: { gte: pastCutoff },
+      },
+      orderBy: { kickoffAt: 'asc' },
+      take: 8,
+      include: {
+        homeClub: true,
+        awayClub: true,
+        competition: true,
+      },
+    }).catch(() => []),
   ]);
 
   const totalTicketKesCents = confirmedTicketRevenue?._sum?.totalKesCents || 0;
@@ -168,6 +197,141 @@ export default async function AdminDashboardPage() {
             Embu collection &amp; nationwide deliveries
           </div>
         </div>
+      </div>
+
+      {/* Official Upcoming Fixtures — Directly Fetched from Flashscore */}
+      <div className="rounded-2xl bg-[#121722] border border-white/10 overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="font-bold uppercase tracking-wider text-white">
+              Official Upcoming Fixtures • Flashscore Live Feed
+            </h2>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Upcoming Matches Only
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition font-medium"
+            >
+              <span>Source: Flashscore Kenya</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <Link
+              href="/admin/fixtures"
+              className="px-3.5 py-1.5 rounded-lg bg-club-primary hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider transition"
+            >
+              Manage Fixtures →
+            </Link>
+          </div>
+        </div>
+
+        {upcomingFixtures && upcomingFixtures.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-black/30 text-slate-400 uppercase font-mono border-b border-white/5">
+                <tr>
+                  <th className="py-3 px-4">Matchup</th>
+                  <th className="py-3 px-4">Competition</th>
+                  <th className="py-3 px-4">Kick-off (EAT)</th>
+                  <th className="py-3 px-4">Venue</th>
+                  <th className="py-3 px-4">Ticketing</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-slate-300">
+                {upcomingFixtures.map((f: any) => {
+                  const dateStr = new Date(f.kickoffAt).toLocaleDateString('en-KE', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'Africa/Nairobi',
+                  });
+                  const timeStr = new Date(f.kickoffAt).toLocaleTimeString('en-KE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Africa/Nairobi',
+                  });
+
+                  return (
+                    <tr key={f.id} className="hover:bg-white/5 transition">
+                      <td className="py-3.5 px-4 font-bold text-white">
+                        <div className="text-sm">
+                          <span className={f.homeClub.isOurClub ? 'text-club-accent' : 'text-white'}>
+                            {f.homeClub.shortName}
+                          </span>{' '}
+                          <span className="text-slate-500 font-normal">vs</span>{' '}
+                          <span className={f.awayClub.isOurClub ? 'text-club-accent' : 'text-white'}>
+                            {f.awayClub.shortName}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {f.isHomeMatch ? 'Home Match at Moi Stadium' : 'Away Match'}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-club-accent font-semibold">
+                        {f.competition?.shortName || 'FKF Premier League'}
+                      </td>
+
+                      <td className="py-3.5 px-4 font-mono text-slate-200">
+                        <div>{dateStr}</div>
+                        <div className="text-[11px] text-slate-400">{timeStr} EAT</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-300 max-w-xs truncate">
+                        {f.venueName}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        {f.ticketsAvailable ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            <Ticket className="w-3 h-3" />
+                            <span>Tickets On Sale</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[11px]">
+                            {f.isHomeMatch ? 'Tickets Pending' : 'Away Gate'}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href="/admin/fixtures"
+                            className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition"
+                            title="Edit Fixture"
+                          >
+                            Edit
+                          </Link>
+                          <Link
+                            href={`/matches/${f.slug}`}
+                            target="_blank"
+                            className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-club-accent transition"
+                            title="View Public Match Centre"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-slate-400 text-xs">
+            No upcoming fixtures found on Flashscore. Click "Sync from Flashscore" to refresh.
+          </div>
+        )}
       </div>
 
       {/* Operational Modules Quick Access Grid */}

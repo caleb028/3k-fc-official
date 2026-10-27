@@ -77,20 +77,20 @@ export default async function PartnersPage() {
         ))}
 
         {/* Measurable Attribution & Reporting Architecture Card */}
-        <div className="rounded-2xl bg-slate-900 text-white p-6 md:p-8 border border-slate-800 flex flex-col justify-between">
+        <div className="rounded-2xl bg-white border border-slate-200 text-slate-800 p-6 md:p-8 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-club-accent">
+            <div className="inline-flex items-center gap-1.5 text-xs athletic-label tracking-wider text-club-primary">
               <BarChart3 className="w-4 h-4" />
               <span>Substantiated Commercial Reporting</span>
             </div>
-            <h2 className="editorial-headline font-bold text-2xl text-white mt-2">
+            <h2 className="editorial-headline font-bold text-2xl text-slate-900 mt-2">
               Measurable Impressions, Clicks &amp; UTM Attribution
             </h2>
-            <p className="text-xs text-slate-300 mt-3 leading-relaxed">
+            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
               Every sponsor placement on the 3K FC platform separates measured server-recorded events (impressions, clicks, referral visits, and attributed ticket/shop conversions) from estimated reach. Downloadable CSV reports are available in the Sponsor Manager dashboard.
             </p>
           </div>
-          <div className="mt-6 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-emerald-400 font-bold">
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-emerald-700 font-bold">
             <ShieldCheck className="w-4 h-4" />
             <span>Consent-Compliant First-Party Attribution</span>
           </div>

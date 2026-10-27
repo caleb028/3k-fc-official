@@ -75,7 +75,7 @@ export function FixturesAdminClient({
       if (!res.ok) throw new Error(data.error || 'Failed to sync from Flashscore.');
 
       setMessage({
-        text: `Successfully synced matchweek fixture & KPL standings from Flashscore! Any finished fixture was removed and the official 18-club league table was refreshed.`,
+        text: `Successfully synced upcoming fixtures & KPL standings from Flashscore! Past fixtures were purged and the official upcoming schedule was refreshed.`,
         success: true,
       });
 
@@ -459,7 +459,7 @@ export function FixturesAdminClient({
       {/* Fixtures Table */}
       <div className="rounded-2xl bg-[#121722] border border-white/10 overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between text-xs">
-          <span className="font-bold uppercase text-white">All Fixtures ({fixtures.length})</span>
+          <span className="font-bold uppercase text-white">Upcoming Fixtures ({fixtures.length}) • Flashscore Feed</span>
           <span className="text-slate-400 font-mono">Timezone: Africa/Nairobi (UTC+3)</span>
         </div>
 

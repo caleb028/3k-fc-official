@@ -8,6 +8,14 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/**': ['./prisma/seed.db'],
   },
+  async redirects() {
+    return [
+      { source: '/matches', destination: '/fixtures', permanent: false },
+      { source: '/standings', destination: '/table', permanent: false },
+      { source: '/store', destination: '/shop', permanent: false },
+      { source: '/heritage', destination: '/club', permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

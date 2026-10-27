@@ -134,10 +134,11 @@ let lastSyncTime = 0;
 const SYNC_COOLDOWN_MS = 15_000; // 15 seconds cooldown
 
 /**
- * Synchronize single matchweek fixture from Flashscore.
+ * Synchronize upcoming fixtures directly from Flashscore.
  * Requirement:
- * 1. Fetch the single matchweek fixture from Flashscore: https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/
- * 2. After a fixture is finished, it should be removed from the website.
+ * 1. Fetch upcoming fixtures from Flashscore: https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/
+ * 2. Purge past finished fixtures so ONLY genuine upcoming fixtures are shown on the website and admin dashboard.
+ * 3. Sync all authentic upcoming matches into the database with accurate kick-off dates and ticketing.
  */
 export async function syncFlashscoreMatchweekFixture(force = false) {
   const now = Date.now();
@@ -151,7 +152,8 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     return { synced: false, message: 'No fixtures found on Flashscore' };
   }
 
-  // 1. Identify finished fixtures and REMOVE them from the website
+  // 1. Purge all past / finished fixtures so only authentic upcoming ones exist
+  const pastCutoff = new Date(Date.now() - 3 * 3600 * 1000);
   const finishedMatches = rawFixtures.filter((f) => f.isFinished);
   const finishedMatchSlugs: string[] = [];
 
@@ -162,36 +164,34 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     finishedMatchSlugs.push(`${awayMap.slug}-vs-${homeMap.slug}`);
   }
 
-  // Remove finished fixtures from the database so they are completely removed from the website
-  if (finishedMatchSlugs.length > 0) {
-    const toDelete = await prisma.fixture.findMany({
-      where: {
-        OR: [
-          { status: 'FULL_TIME' },
-          ...finishedMatchSlugs.map((s) => ({ slug: { contains: s } })),
-        ],
-      },
-      select: { id: true, slug: true },
-    });
+  const pastToPurge = await prisma.fixture.findMany({
+    where: {
+      OR: [
+        { status: 'FULL_TIME' },
+        { kickoffAt: { lt: pastCutoff } },
+        ...finishedMatchSlugs.map((s) => ({ slug: { contains: s } })),
+      ],
+    },
+    select: { id: true },
+  });
 
-    for (const fix of toDelete) {
-      // Clean up relations first if any exist
-      await prisma.ticketCategory.deleteMany({ where: { fixtureId: fix.id } }).catch(() => {});
-      await prisma.liveBlogUpdate.deleteMany({ where: { fixtureId: fix.id } }).catch(() => {});
-      await prisma.matchPoll.deleteMany({ where: { fixtureId: fix.id } }).catch(() => {});
-      await prisma.fixture.delete({ where: { id: fix.id } }).catch(() => {});
-    }
+  for (const p of pastToPurge) {
+    await prisma.ticketCategory.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
+    await prisma.liveBlogUpdate.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
+    await prisma.matchPoll.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
+    await prisma.fixture.delete({ where: { id: p.id } }).catch(() => {});
   }
 
-  // 2. Identify the SINGLE current matchweek fixture (first upcoming / live match)
-  const scheduledOrLive = rawFixtures.filter((f) => !f.isFinished && (f.isScheduled || f.isLive));
-  const singleMatchweek = scheduledOrLive[0];
+  // 2. Identify strictly upcoming scheduled / live matches
+  const scheduledOrLive = rawFixtures.filter(
+    (f) => !f.isFinished && f.kickoffAt && f.kickoffAt.getTime() >= pastCutoff.getTime()
+  );
 
-  if (!singleMatchweek || !singleMatchweek.kickoffAt) {
-    return { synced: true, message: 'No active upcoming matchweek fixture found on Flashscore' };
+  if (!scheduledOrLive.length) {
+    return { synced: true, message: 'No upcoming fixtures found on Flashscore', count: 0 };
   }
 
-  // Resolve 3K FC club
+  // Resolve 3K FC club record
   let club3k = await prisma.club.findFirst({ where: { isOurClub: true } });
   if (!club3k) {
     club3k = await prisma.club.create({
@@ -206,26 +206,6 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     });
   }
 
-  const isHome = singleMatchweek.homeTeam.toLowerCase().includes('3k');
-  const opponentRaw = isHome ? singleMatchweek.awayTeam : singleMatchweek.homeTeam;
-  const oppMap = resolveClubMapping(opponentRaw);
-
-  let oppClub = await prisma.club.findUnique({ where: { slug: oppMap.slug } });
-  if (!oppClub) {
-    oppClub = await prisma.club.create({
-      data: {
-        name: oppMap.defaultName,
-        shortName: oppMap.defaultName.replace(' FC', '').replace(' SC', ''),
-        slug: oppMap.slug,
-        city: 'Kenya',
-        isOurClub: false,
-      },
-    });
-  }
-
-  const homeClubId = isHome ? club3k.id : oppClub.id;
-  const awayClubId = isHome ? oppClub.id : club3k.id;
-
   // Resolve competition and season
   const comp =
     (await prisma.competition.findFirst({ where: { slug: 'fkf-premier-league' } })) ||
@@ -238,104 +218,127 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     throw new Error('Competition or season record missing');
   }
 
-  const fixtureSlug = `${isHome ? '3k-fc' : oppClub.slug}-vs-${isHome ? oppClub.slug : '3k-fc'}-matchweek`;
-  const venueName = isHome ? 'Moi Stadium, Embu' : oppClub.stadiumName || `${oppClub.name} Stadium`;
-  const venueCity = isHome ? 'Embu' : oppClub.city || 'Kenya';
+  const syncedFixtures = [];
 
-  // Check if this fixture already exists
-  const existingFixture = await prisma.fixture.findFirst({
-    where: {
-      OR: [
-        { slug: fixtureSlug },
-        {
-          homeClubId,
-          awayClubId,
-          status: { in: ['SCHEDULED', 'LIVE', 'HALF_TIME'] },
+  for (let i = 0; i < scheduledOrLive.length; i++) {
+    const item = scheduledOrLive[i];
+    if (!item.kickoffAt) continue;
+
+    const isHome = item.homeTeam.toLowerCase().includes('3k');
+    const opponentRaw = isHome ? item.awayTeam : item.homeTeam;
+    const oppMap = resolveClubMapping(opponentRaw);
+
+    let oppClub = await prisma.club.findUnique({ where: { slug: oppMap.slug } });
+    if (!oppClub) {
+      oppClub = await prisma.club.create({
+        data: {
+          name: oppMap.defaultName,
+          shortName: oppMap.defaultName.replace(' FC', '').replace(' SC', ''),
+          slug: oppMap.slug,
+          city: 'Kenya',
+          isOurClub: false,
         },
-      ],
-    },
-  });
-
-  let activeFixture;
-  if (existingFixture) {
-    activeFixture = await prisma.fixture.update({
-      where: { id: existingFixture.id },
-      data: {
-        kickoffAt: singleMatchweek.kickoffAt,
-        kickoffConfirmed: true,
-        venueName,
-        venueCity,
-        status: singleMatchweek.isLive ? 'LIVE' : 'SCHEDULED',
-        broadcastInfo: singleMatchweek.broadcastInfo || 'Broadcast: Azam Sports / FKF TV',
-        ticketsAvailable: isHome,
-      },
-      include: { homeClub: true, awayClub: true, competition: true },
-    });
-  } else {
-    activeFixture = await prisma.fixture.create({
-      data: {
-        slug: fixtureSlug,
-        competitionId: comp.id,
-        seasonId: season.id,
-        homeClubId,
-        awayClubId,
-        isHomeMatch: isHome,
-        roundName: 'FKF Premier League — Matchweek Fixture',
-        kickoffAt: singleMatchweek.kickoffAt,
-        kickoffConfirmed: true,
-        venueName,
-        venueCity,
-        venueConfirmed: true,
-        status: singleMatchweek.isLive ? 'LIVE' : 'SCHEDULED',
-        broadcastInfo: singleMatchweek.broadcastInfo || 'Broadcast: Azam Sports / FKF TV',
-        ticketsAvailable: isHome,
-      },
-      include: { homeClub: true, awayClub: true, competition: true },
-    });
-
-    if (isHome) {
-      await prisma.ticketCategory.createMany({
-        data: [
-          {
-            fixtureId: activeFixture.id,
-            nameEn: 'General Admission (Terraces)',
-            nameSw: 'Jukwaa la Kawaida (Terraces)',
-            descriptionEn: 'General admission at Moi Stadium, Embu.',
-            priceKesCents: 20000, // KES 200
-            maxPerOrder: 6,
-            isActive: true,
-          },
-          {
-            fixtureId: activeFixture.id,
-            nameEn: 'VIP / Main Dais Pass',
-            nameSw: 'Jukwaa Kuu la VIP',
-            descriptionEn: 'Covered VIP Dais seating.',
-            priceKesCents: 50000, // KES 500
-            maxPerOrder: 4,
-            isActive: true,
-          },
-        ],
       });
     }
-  }
 
-  // Remove any OTHER old/stale fixtures in the database so that ONLY the single matchweek fixture is displayed
-  await prisma.fixture.deleteMany({
-    where: {
-      id: { not: activeFixture.id },
-      status: { in: ['FULL_TIME', 'SCHEDULED', 'POSTPONED'] },
-      kickoffAt: { lt: new Date(singleMatchweek.kickoffAt.getTime() - 2 * 3600 * 1000) },
-    },
-  }).catch(() => {});
+    const homeClubId = isHome ? club3k.id : oppClub.id;
+    const awayClubId = isHome ? oppClub.id : club3k.id;
+    const fixtureSlug = `3k-vs-${oppMap.slug}-${item.matchId}`;
+    const venueName = isHome ? 'Moi Stadium, Embu' : oppClub.stadiumName || `${oppClub.name} Stadium`;
+    const venueCity = isHome ? 'Embu' : oppClub.city || 'Kenya';
+
+    const matchStatus = item.isLive ? 'LIVE' : 'SCHEDULED';
+    const roundName = i === 0 ? 'FKF Premier League — Next Matchweek' : `FKF Premier League — Matchday ${i + 1}`;
+
+    const existing = await prisma.fixture.findFirst({
+      where: {
+        OR: [
+          { slug: fixtureSlug },
+          {
+            homeClubId,
+            awayClubId,
+            kickoffAt: {
+              gte: new Date(item.kickoffAt.getTime() - 12 * 3600 * 1000),
+              lte: new Date(item.kickoffAt.getTime() + 12 * 3600 * 1000),
+            },
+          },
+        ],
+      },
+    });
+
+    let saved;
+    if (existing) {
+      saved = await prisma.fixture.update({
+        where: { id: existing.id },
+        data: {
+          kickoffAt: item.kickoffAt,
+          kickoffConfirmed: true,
+          venueName,
+          venueCity,
+          status: matchStatus,
+          ticketsAvailable: isHome,
+          broadcastInfo: item.broadcastInfo || 'Broadcast: Azam Sports / FKF TV',
+        },
+        include: { homeClub: true, awayClub: true, competition: true },
+      });
+    } else {
+      saved = await prisma.fixture.create({
+        data: {
+          slug: fixtureSlug,
+          competitionId: comp.id,
+          seasonId: season.id,
+          homeClubId,
+          awayClubId,
+          isHomeMatch: isHome,
+          roundName,
+          matchday: i + 1,
+          kickoffAt: item.kickoffAt,
+          kickoffConfirmed: true,
+          venueName,
+          venueCity,
+          venueConfirmed: true,
+          status: matchStatus,
+          ticketsAvailable: isHome,
+          broadcastInfo: item.broadcastInfo || 'Broadcast: Azam Sports / FKF TV',
+        },
+        include: { homeClub: true, awayClub: true, competition: true },
+      });
+
+      if (isHome) {
+        await prisma.ticketCategory.createMany({
+          data: [
+            {
+              fixtureId: saved.id,
+              nameEn: 'General Admission (Terraces)',
+              nameSw: 'Jukwaa la Kawaida (Terraces)',
+              descriptionEn: 'General admission at Moi Stadium, Embu.',
+              priceKesCents: 20000,
+              maxPerOrder: 6,
+              isActive: true,
+            },
+            {
+              fixtureId: saved.id,
+              nameEn: 'VIP / Main Dais Pass',
+              nameSw: 'Jukwaa Kuu la VIP',
+              descriptionEn: 'Covered VIP Dais seating.',
+              priceKesCents: 50000,
+              maxPerOrder: 4,
+              isActive: true,
+            },
+          ],
+        }).catch(() => {});
+      }
+    }
+
+    syncedFixtures.push(saved);
+  }
 
   return {
     synced: true,
-    fixture: activeFixture,
-    opponent: oppClub.name,
-    kickoffAt: singleMatchweek.kickoffAt,
-    isHome,
-    broadcastInfo: singleMatchweek.broadcastInfo,
-    removedFinishedCount: finishedMatchSlugs.length,
+    totalUpcoming: syncedFixtures.length,
+    nextMatch: syncedFixtures[0],
+    fixtures: syncedFixtures,
+    purgedPastCount: pastToPurge.length,
   };
 }
 

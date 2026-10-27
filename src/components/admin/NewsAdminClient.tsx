@@ -112,6 +112,7 @@ export function NewsAdminClient({
   const [articles, setArticles] = useState<ArticleRecord[]>(initialArticles);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [syncingFacebook, setSyncingFacebook] = useState(false);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
 
   // Form State
@@ -340,6 +341,29 @@ export function NewsAdminClient({
     }
   };
 
+  const handleSyncFacebook = async () => {
+    setSyncingFacebook(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/news/facebook-sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to sync Facebook news.');
+
+      setMessage({
+        text: `Facebook news synchronized successfully! (${data.syncedCount} stories updated from facebook.com/3kfootballclub)`,
+        success: true,
+      });
+
+      // Refresh page data cleanly
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err: any) {
+      setMessage({ text: err.message || 'Failed to fetch Facebook news', success: false });
+      setSyncingFacebook(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Action Bar */}
@@ -349,18 +373,31 @@ export function NewsAdminClient({
             Editorial Press Desk
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Publish team news, upload photos from device, write match previews, and manage official articles.
+            Auto-fetch team news from Facebook, upload photos from device, write match previews, and manage official articles.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-club-primary hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider shadow transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Publish Team News</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={syncingFacebook}
+            onClick={handleSyncFacebook}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] text-white text-xs font-bold uppercase tracking-wider shadow transition disabled:opacity-50"
+            title="Fetch latest team news from facebook.com/3kfootballclub"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingFacebook ? 'animate-spin' : ''}`} />
+            <span>{syncingFacebook ? 'Syncing...' : 'Sync Facebook News'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-club-primary hover:bg-red-600 text-white text-xs font-bold uppercase tracking-wider shadow transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Publish Team News</span>
+          </button>
+        </div>
       </div>
 
       {/* Alert Banner */}
@@ -863,7 +900,14 @@ export function NewsAdminClient({
                         </div>
 
                         <div className="min-w-0">
-                          <div className="truncate text-sm">{enTrans?.headline || art.slug}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="truncate text-sm">{enTrans?.headline || art.slug}</span>
+                            {(art.authorName.includes('Facebook') || art.slug.startsWith('fb-')) && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#1877F2]/20 text-[#1877F2] border border-[#1877F2]/30 shrink-0">
+                                FB Feed
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
                             /news/{art.slug}
                           </div>

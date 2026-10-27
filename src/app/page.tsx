@@ -19,6 +19,7 @@ import { Locale, resolveBilingualField, t } from '@/lib/i18n';
 import { LiveMatchBar, MatchBarFixtureData } from '@/components/football/LiveMatchBar';
 import { AuthenticMediaPlaceholder } from '@/components/ui/AuthenticMediaPlaceholder';
 import { syncFlashscoreMatchweekFixture, syncFlashscoreStandings } from '@/lib/flashscore';
+import { syncFacebookTeamNews } from '@/lib/facebook';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,10 +27,11 @@ export default async function HomePage() {
   const cookieStore = await cookies();
   const locale: Locale = cookieStore.get('3kfc_locale')?.value === 'sw' ? 'sw' : 'en';
 
-  // Automatically sync single matchweek fixture & live table standings from Flashscore
+  // Automatically sync fixtures & table standings from Flashscore and team news from Facebook
   await Promise.all([
     syncFlashscoreMatchweekFixture().catch(() => null),
     syncFlashscoreStandings().catch(() => null),
+    syncFacebookTeamNews().catch(() => null),
   ]);
 
   const [
