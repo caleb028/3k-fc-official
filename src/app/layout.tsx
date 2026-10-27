@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Barlow, Barlow_Condensed } from 'next/font/google';
 import { cookies } from 'next/headers';
 import './globals.css';
 import { prisma } from '@/lib/prisma';
@@ -7,26 +6,6 @@ import { LanguageProvider } from '@/components/providers/LanguageProvider';
 import { PublicHeader } from '@/components/layout/PublicHeader';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { Locale } from '@/lib/i18n';
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-fraunces',
-  display: 'swap',
-});
-
-const barlow = Barlow({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-barlow',
-  display: 'swap',
-});
-
-const barlowCondensed = Barlow_Condensed({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  variable: '--font-barlow-condensed',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -82,19 +61,26 @@ export default async function RootLayout({
     '--club-blue': '#0E4494',
     '--club-accent': settings?.accentColor || '#D4AF37',
     '--club-gold': '#D4AF37',
-    '--surface-light': settings?.surfaceLightColor || '#FFFFFF',
-    '--surface-offwhite': settings?.surfaceOffwhiteColor || '#F4F7FB',
-    '--surface-dark': settings?.surfaceDarkColor || '#081326',
-    '--surface-card-dark': '#0E1E3A',
+    '--surface-light': '#FFFFFF',
+    '--surface-offwhite': '#FFFFFF',
+    '--surface-dark': '#0F172A',
+    '--surface-card-dark': '#1E293B',
   } as React.CSSProperties;
 
   return (
     <html
       lang={initialLocale}
-      className={`${fraunces.variable} ${barlow.variable} ${barlowCondensed.variable}`}
       style={cssVariables}
     >
-      <body className="min-h-screen flex flex-col bg-club-surfaceOffwhite text-slate-900">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen flex flex-col bg-white text-slate-900">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-club-primary focus:text-white focus:rounded-md focus:font-bold"

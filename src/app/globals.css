@@ -1,8 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  --font-orbitron: 'Orbitron', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-barlow: 'Barlow', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
   /* Official 3K FC Crest Major Colors: Royal Blue & Crimson Red (Blaugrana Heritage) */
   --club-primary: #E11D2A;
   --club-primary-dark: #B91C1C;
@@ -16,12 +21,12 @@
   --club-accent: #D4AF37;
   --club-gold: #D4AF37;
 
-  /* FC Barcelona Clean Contrast Surfaces */
+  /* Clean High-End White Primary Aesthetic with Selective Logo Text Accents */
   --surface-light: #FFFFFF;
-  --surface-offwhite: #F8FAFC;
-  --surface-dark: #081326;
-  --surface-darker: #040A14;
-  --surface-card-dark: #0E1E3A;
+  --surface-offwhite: #FFFFFF;
+  --surface-dark: #0F172A;
+  --surface-darker: #020617;
+  --surface-card-dark: #1E293B;
   --text-muted: #64748B;
   --border-subtle: #E2E8F0;
 
@@ -32,10 +37,11 @@
 
 html {
   scroll-behavior: smooth;
+  background-color: #FFFFFF;
 }
 
 body {
-  background-color: var(--surface-offwhite);
+  background-color: #FFFFFF;
   color: #0F172A;
   font-family: var(--font-barlow), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -48,26 +54,28 @@ body {
   outline-offset: 2px;
 }
 
-/* FC Barcelona-Style Headline & Athletic Typography */
+/* High-Impact Geometric Athletic Display Typography (from reference image) */
 .editorial-headline {
-  font-family: var(--font-barlow-condensed), system-ui, sans-serif;
+  font-family: var(--font-orbitron), system-ui, sans-serif;
   text-transform: uppercase;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   font-weight: 800;
-  line-height: 1.05;
-}
-
-.serif-headline {
-  font-family: var(--font-fraunces), Georgia, serif;
-  letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
-.athletic-label {
-  font-family: var(--font-barlow-condensed), system-ui, sans-serif;
-  letter-spacing: 0.12em;
+.serif-headline {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
   text-transform: uppercase;
   font-weight: 800;
+}
+
+.athletic-label {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 /* FC Barcelona Micro-Motions & Interactive Styling */

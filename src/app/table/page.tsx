@@ -90,13 +90,13 @@ export default async function LeagueTablePage({
       </div>
 
       {/* Competition Status Banner */}
-      <div className="rounded-xl bg-slate-900 text-slate-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-4 text-xs">
+      <div className="rounded-xl bg-slate-50 border border-slate-200 text-slate-700 p-4 mb-6 flex flex-wrap items-center justify-between gap-4 text-xs">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-club-accent uppercase tracking-wider">FKF Premier League</span>
-          <span>• 18 Clubs • Season 2026/27</span>
+          <span className="athletic-label text-club-primary tracking-wider">FKF Premier League</span>
+          <span className="text-slate-500">• 18 Clubs • Season 2026/27</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <Clock className="w-3.5 h-3.5 text-club-accent" />
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Clock className="w-3.5 h-3.5 text-club-primary" />
           <span>
             Last Updated:{' '}
             {lastUpdated
@@ -139,7 +139,7 @@ export default async function LeagueTablePage({
                       key={row.id}
                       className={
                         isOur
-                          ? 'bg-[#004D98]/10 font-bold text-slate-900 border-l-4 border-l-[#A50044]'
+                          ? 'bg-red-50/60 font-bold text-slate-900 border-l-4 border-l-club-primary'
                           : 'hover:bg-slate-50 text-slate-700'
                       }
                     >

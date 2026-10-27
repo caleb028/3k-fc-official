@@ -116,35 +116,35 @@ export default async function ClubHistoryPage() {
       </section>
 
       {/* Stadium Guide Section */}
-      <section className="rounded-3xl bg-[#081326] text-white p-8 md:p-12 border border-white/10 shadow-2xl">
+      <section className="rounded-3xl bg-white text-slate-800 p-8 md:p-12 border border-slate-200 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <span className="inline-flex items-center gap-1.5 text-xs athletic-label tracking-wider text-club-accent">
+            <span className="inline-flex items-center gap-1.5 text-xs athletic-label tracking-wider text-club-primary">
               <MapPin className="w-4 h-4" />
               <span>Official Match Venue &amp; Fortress</span>
             </span>
-            <h2 className="editorial-headline text-3xl md:text-5xl text-white">
+            <h2 className="editorial-headline text-3xl md:text-5xl text-slate-900">
               {settings?.homeStadiumName || 'Moi Stadium, Embu'}
             </h2>
-            <p className="text-xs text-amber-300 font-medium">
+            <p className="text-xs text-amber-700 font-medium bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
               Notice: {settings?.homeStadiumVerificationNote || 'Subject to confirmation of the club\'s official match venue.'}
             </p>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-slate-600 leading-relaxed">
               Located in the heart of Embu Town, Moi Stadium has served as the historic fortress where 3K FC captured the FKF Division One Zone A title and mounted its 77-point NSL promotion campaign. Matchday crowds regularly turn out in thousands, creating an electric atmosphere for visiting teams.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 text-xs text-slate-200">
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                <strong className="block text-white mb-1 athletic-label">Travel &amp; Directions</strong>
-                <span>Easily accessible from Embu Town Centre via Nairobi-Meru Highway. Ample parking at stadium perimeter.</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 text-xs text-slate-700">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <strong className="block text-slate-900 mb-1 athletic-label">Travel &amp; Directions</strong>
+                <span className="text-slate-600">Easily accessible from Embu Town Centre via Nairobi-Meru Highway. Ample parking at stadium perimeter.</span>
               </div>
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
-                <strong className="block text-white mb-1 athletic-label">Accessibility Support</strong>
-                <span>Dedicated accessible spectator gates and steward assistance for supporters with disabilities.</span>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <strong className="block text-slate-900 mb-1 athletic-label">Accessibility Support</strong>
+                <span className="text-slate-600">Dedicated accessible spectator gates and steward assistance for supporters with disabilities.</span>
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-5 rounded-2xl overflow-hidden shadow-xl">
+          <div className="lg:col-span-5 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
             <AuthenticMediaPlaceholder
               category="Stadium Facility"
               label="Moi Stadium, Embu County"

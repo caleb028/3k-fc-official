@@ -61,8 +61,8 @@ export default async function AdminDashboardPage() {
     prisma.clubSettings.findUnique({ where: { id: 'default' } }).catch(() => null),
   ]);
 
-  const totalTicketKesCents = confirmedTicketRevenue._sum.totalKesCents || 0;
-  const totalDonationsKesCents = confirmedDonationsTotal._sum.amountKesCents || 0;
+  const totalTicketKesCents = confirmedTicketRevenue?._sum?.totalKesCents || 0;
+  const totalDonationsKesCents = confirmedDonationsTotal?._sum?.amountKesCents || 0;
 
   return (
     <div className="space-y-8">

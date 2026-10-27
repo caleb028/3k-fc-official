@@ -6,6 +6,7 @@ interface ClubCrestProps {
   crestConfirmed?: boolean;
   showWordmark?: boolean;
   className?: string;
+  darkText?: boolean;
 }
 
 export function ClubCrest({
@@ -14,6 +15,7 @@ export function ClubCrest({
   crestConfirmed = true,
   showWordmark = false,
   className = '',
+  darkText = false,
 }: ClubCrestProps) {
   const dimensions = {
     sm: 'w-9 h-9',
@@ -69,14 +71,14 @@ export function ClubCrest({
       {showWordmark && (
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
-            <span className="font-display font-black text-lg md:text-xl tracking-tight text-white leading-none">
+            <span className={`font-display font-black text-lg md:text-xl tracking-tight leading-none ${darkText ? 'text-slate-900' : 'text-white'}`}>
               3K FC
             </span>
             <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-club-red text-white border border-white/20 shadow-sm">
               EMBU
             </span>
           </div>
-          <span className="text-[11px] text-club-gold tracking-wide font-bold mt-0.5 uppercase">
+          <span className={`text-[11px] tracking-wide font-bold mt-0.5 uppercase ${darkText ? 'text-club-primary' : 'text-club-gold'}`}>
             Home of Stars • Est. 2013
           </span>
         </div>

@@ -67,17 +67,17 @@ export function PublicHeader({
 
   return (
     <>
-      {/* FC BARCELONA-STYLE TOP UTILITY BAR */}
-      <div className="bg-[#040A14] border-b border-white/10 text-slate-300 text-xs py-2 px-4 select-none">
+      {/* TOP UTILITY BAR (Clean Light Luxury) */}
+      <div className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs py-2 px-4 select-none">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Club Slogan & Heritage */}
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-club-accent font-extrabold uppercase tracking-widest text-[11px]">
+            <span className="inline-flex items-center gap-1.5 text-club-primary font-black uppercase tracking-widest text-[11px]">
               <Sparkles className="w-3.5 h-3.5" />
               <span>God&apos;s Favourite Club</span>
             </span>
-            <span className="text-slate-600 hidden sm:inline">•</span>
-            <span className="text-slate-400 font-semibold text-[11px] hidden sm:inline">
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <span className="text-slate-500 font-semibold text-[11px] hidden sm:inline">
               Home of Stars • Embu County, Kenya
             </span>
           </div>
@@ -86,15 +86,15 @@ export function PublicHeader({
           <div className="flex items-center gap-4 text-[11px] font-bold">
             <Link
               href="/videos"
-              className="inline-flex items-center gap-1 text-slate-300 hover:text-white transition"
+              className="inline-flex items-center gap-1 text-slate-600 hover:text-club-secondary transition"
             >
-              <PlayCircle className="w-3.5 h-3.5 text-club-accent" />
+              <PlayCircle className="w-3.5 h-3.5 text-club-secondary" />
               <span className="hidden sm:inline">3K TV</span>
             </Link>
 
             <Link
               href="/support-3k"
-              className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 transition"
+              className="inline-flex items-center gap-1 text-club-primary hover:underline transition"
             >
               <HeartHandshake className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t('nav.donations')}</span>
@@ -104,15 +104,15 @@ export function PublicHeader({
             <div
               role="group"
               aria-label="Language Switcher"
-              className="inline-flex items-center rounded-full bg-white/10 p-0.5 border border-white/15"
+              className="inline-flex items-center rounded-full bg-slate-200/70 p-0.5 border border-slate-300"
             >
               <button
                 type="button"
                 onClick={() => setLocale('en')}
                 className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
                   locale === 'en'
-                    ? 'bg-club-primary text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-club-secondary text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 aria-pressed={locale === 'en'}
               >
@@ -123,8 +123,8 @@ export function PublicHeader({
                 onClick={() => setLocale('sw')}
                 className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
                   locale === 'sw'
-                    ? 'bg-club-primary text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-club-secondary text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 aria-pressed={locale === 'sw'}
               >
@@ -135,17 +135,17 @@ export function PublicHeader({
             {/* Member Sign-In */}
             <Link
               href="/account"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition border border-white/15"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-800 font-bold transition border border-slate-300 shadow-xs"
             >
-              <User className="w-3 h-3 text-club-accent" />
+              <User className="w-3 h-3 text-club-secondary" />
               <span>Sign In</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* FC BARCELONA-STYLE STICKY MAIN HEADER */}
-      <header className="sticky top-0 z-40 bg-[#081326]/95 backdrop-blur-md text-white shadow-xl">
+      {/* STICKY MAIN HEADER (Clean White with Club Accent Texts) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md text-slate-900 border-b border-slate-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-18 md:h-20 gap-4">
             {/* 3K FC Official Crest & Athletic Wordmark */}
@@ -155,10 +155,11 @@ export function PublicHeader({
                 crestUrl={crestUrl}
                 crestConfirmed={crestConfirmed}
                 showWordmark={true}
+                darkText={true}
               />
             </Link>
 
-            {/* Desktop Primary Navigation (Clean Athletic Typography) */}
+            {/* Desktop Primary Navigation (Clean High-Contrast Typography) */}
             <nav
               aria-label="Primary Navigation"
               className="hidden xl:flex items-center gap-1"
@@ -172,13 +173,13 @@ export function PublicHeader({
                     href={item.href}
                     className={`relative px-3.5 py-2 athletic-label text-xs tracking-wider transition ${
                       isActive
-                        ? 'text-white'
-                        : 'text-slate-300 hover:text-white hover:bg-white/5 rounded-lg'
+                        ? 'text-club-primary font-black'
+                        : 'text-slate-700 hover:text-club-secondary hover:bg-slate-100 rounded-lg font-bold'
                     }`}
                   >
                     <span>{item.label}</span>
                     {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-club-red via-club-gold to-club-blue rounded-full" />
+                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-club-primary rounded-full" />
                     )}
                   </Link>
                 );
@@ -188,33 +189,33 @@ export function PublicHeader({
               <div className="relative group">
                 <button
                   type="button"
-                  className="px-2.5 py-2 athletic-label text-xs tracking-wider text-slate-300 hover:text-white hover:bg-white/5 rounded-lg inline-flex items-center gap-1"
+                  className="px-2.5 py-2 athletic-label text-xs tracking-wider text-slate-700 hover:text-club-secondary hover:bg-slate-100 rounded-lg inline-flex items-center gap-1 font-bold"
                 >
                   <span>MORE</span>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </button>
-                <div className="absolute right-0 mt-1 w-52 rounded-xl bg-[#081326] border border-white/15 shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <div className="absolute right-0 mt-1 w-52 rounded-xl bg-white border border-slate-200 shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                   <Link
                     href="/results"
-                    className="block px-4 py-2.5 text-xs athletic-label text-slate-200 hover:bg-club-primary hover:text-white transition"
+                    className="block px-4 py-2.5 text-xs athletic-label text-slate-700 hover:bg-slate-50 hover:text-club-primary transition font-bold"
                   >
                     Confirmed Results
                   </Link>
                   <Link
                     href="/videos"
-                    className="block px-4 py-2.5 text-xs athletic-label text-slate-200 hover:bg-club-primary hover:text-white transition"
+                    className="block px-4 py-2.5 text-xs athletic-label text-slate-700 hover:bg-slate-50 hover:text-club-primary transition font-bold"
                   >
                     Video Hub &amp; Highlights
                   </Link>
                   <Link
                     href="/support-3k"
-                    className="block px-4 py-2.5 text-xs athletic-label text-amber-300 hover:bg-club-primary hover:text-white transition"
+                    className="block px-4 py-2.5 text-xs athletic-label text-slate-700 hover:bg-slate-50 hover:text-club-primary transition font-bold"
                   >
                     Support 3K Donations
                   </Link>
                   <Link
                     href="/contact"
-                    className="block px-4 py-2.5 text-xs athletic-label text-slate-200 hover:bg-club-primary hover:text-white transition"
+                    className="block px-4 py-2.5 text-xs athletic-label text-slate-700 hover:bg-slate-50 hover:text-club-primary transition font-bold"
                   >
                     Contact &amp; Press Desk
                   </Link>
@@ -229,24 +230,24 @@ export function PublicHeader({
                 type="button"
                 onClick={() => setSearchOpen((prev) => !prev)}
                 aria-label={t('nav.search')}
-                className="p-2.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition"
+                className="p-2.5 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
               >
                 <Search className="w-4 h-4" />
               </button>
 
-              {/* FC Barcelona-Style TICKETS Action Pill */}
+              {/* TICKETS Action Pill */}
               <Link
                 href="/tickets"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-club-primary hover:bg-red-700 text-white font-extrabold shadow-lg hover:shadow-red-600/30 transition transform hover:-translate-y-0.5"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-club-primary hover:bg-red-700 text-white font-extrabold shadow-sm transition transform hover:-translate-y-0.5"
               >
                 <Ticket className="w-3.5 h-3.5" />
                 <span>TICKETS</span>
               </Link>
 
-              {/* FC Barcelona-Style STORE Action Pill */}
+              {/* STORE Action Pill */}
               <Link
                 href="/shop"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-[#0E4494] hover:bg-blue-700 text-white font-extrabold shadow-lg hover:shadow-blue-600/30 transition transform hover:-translate-y-0.5"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-club-secondary hover:bg-blue-800 text-white font-extrabold shadow-sm transition transform hover:-translate-y-0.5"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
                 <span>STORE</span>
@@ -258,7 +259,7 @@ export function PublicHeader({
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle Navigation Menu"
-                className="xl:hidden p-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/10"
+                className="xl:hidden p-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -266,12 +267,12 @@ export function PublicHeader({
           </div>
         </div>
 
-        {/* FC Barcelona Signature Blaugrana Bottom Stripe */}
-        <div className="barca-stripe-accent w-full" />
+        {/* Subtle Bottom Border Line */}
+        <div className="h-0.5 w-full bg-slate-200" />
 
         {/* Search Drawer Modal */}
         {searchOpen && (
-          <div className="border-t border-white/10 bg-[#040A14] py-4 px-4 shadow-2xl animate-in fade-in duration-200">
+          <div className="border-t border-slate-200 bg-white py-4 px-4 shadow-lg animate-in fade-in duration-200">
             <form
               onSubmit={handleSearchSubmit}
               className="max-w-3xl mx-auto flex items-center gap-2"
@@ -290,19 +291,19 @@ export function PublicHeader({
                     ? 'Tafuta habari za 3K FC, wachezaji, ratiba za mechi au jezi...'
                     : 'Search 3K FC news, players, fixtures, results or official jerseys...'
                 }
-                className="flex-1 bg-black/60 border border-white/20 rounded-full px-5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-club-accent"
+                className="flex-1 bg-slate-50 border border-slate-300 rounded-full px-5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-club-secondary"
                 autoFocus
               />
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-full bg-club-primary hover:bg-red-600 text-white athletic-label text-xs tracking-wider transition"
+                className="px-6 py-2.5 rounded-full bg-club-secondary hover:bg-blue-800 text-white athletic-label text-xs tracking-wider transition"
               >
                 Search
               </button>
               <button
                 type="button"
                 onClick={() => setSearchOpen(false)}
-                className="p-2.5 rounded-full text-slate-400 hover:text-white"
+                className="p-2.5 rounded-full text-slate-500 hover:text-slate-800"
                 aria-label="Close Search"
               >
                 <X className="w-5 h-5" />
@@ -313,14 +314,14 @@ export function PublicHeader({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="xl:hidden border-t border-white/10 bg-[#081326] px-4 pt-3 pb-6 space-y-2">
+          <div className="xl:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl">
             <div className="grid grid-cols-2 gap-2 pt-2">
               {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-xl bg-white/5 hover:bg-club-primary text-xs athletic-label tracking-wider text-white transition flex items-center justify-between"
+                  className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
                 >
                   <span>{item.label}</span>
                 </Link>
@@ -328,14 +329,14 @@ export function PublicHeader({
               <Link
                 href="/videos"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-white/5 hover:bg-club-primary text-xs athletic-label tracking-wider text-white transition"
+                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition border border-slate-200"
               >
                 3K TV / Highlights
               </Link>
               <Link
                 href="/support-3k"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-amber-500/20 border border-amber-400/30 text-xs athletic-label tracking-wider text-amber-300 transition"
+                className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs athletic-label tracking-wider text-club-primary transition"
               >
                 Support 3K Donations
               </Link>
@@ -347,12 +348,12 @@ export function PublicHeader({
       {/* Mobile Bottom Thumb-Friendly Bar */}
       <nav
         aria-label="Mobile Quick Navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#081326]/95 backdrop-blur-md border-t border-white/15 flex items-center justify-around py-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-300"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 shadow-lg"
       >
         <Link
           href="/"
           className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded ${
-            pathname === '/' ? 'text-club-accent' : 'hover:text-white'
+            pathname === '/' ? 'text-club-primary font-black' : 'hover:text-slate-900'
           }`}
         >
           <Home className="w-5 h-5" />
@@ -362,8 +363,8 @@ export function PublicHeader({
           href="/fixtures"
           className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded ${
             pathname?.startsWith('/fixtures') || pathname?.startsWith('/matches')
-              ? 'text-club-accent'
-              : 'hover:text-white'
+              ? 'text-club-primary font-black'
+              : 'hover:text-slate-900'
           }`}
         >
           <Calendar className="w-5 h-5" />
@@ -371,7 +372,7 @@ export function PublicHeader({
         </Link>
         <Link
           href="/tickets"
-          className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full bg-club-primary text-white shadow-lg font-black"
+          className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-full bg-club-primary text-white shadow-sm font-black"
         >
           <Ticket className="w-5 h-5" />
           <span>Tickets</span>
@@ -379,7 +380,7 @@ export function PublicHeader({
         <Link
           href="/shop"
           className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded ${
-            pathname?.startsWith('/shop') ? 'text-club-accent' : 'hover:text-white'
+            pathname?.startsWith('/shop') ? 'text-club-primary font-black' : 'hover:text-slate-900'
           }`}
         >
           <ShoppingBag className="w-5 h-5" />
@@ -388,7 +389,7 @@ export function PublicHeader({
         <Link
           href="/account"
           className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded ${
-            pathname?.startsWith('/account') ? 'text-club-accent' : 'hover:text-white'
+            pathname?.startsWith('/account') ? 'text-club-primary font-black' : 'hover:text-slate-900'
           }`}
         >
           <User className="w-5 h-5" />

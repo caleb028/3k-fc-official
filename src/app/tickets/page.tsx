@@ -54,17 +54,17 @@ export default async function TicketsPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-16 space-y-10">
-      {/* FC Barcelona-Style Matchday Atmosphere Hero Banner */}
-      <section className="relative rounded-3xl overflow-hidden bg-[#081326] text-white border border-white/10 shadow-2xl">
+      {/* Matchday Atmosphere Hero Banner */}
+      <section className="relative rounded-3xl overflow-hidden bg-white text-slate-800 border border-slate-200 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
           <div className="lg:col-span-7 p-8 sm:p-12 md:p-14 z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-club-primary/20 border border-club-primary/40 text-club-primary text-xs athletic-label tracking-widest">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-club-primary text-xs athletic-label tracking-widest">
               <span>OFFICIAL MATCHDAY BOX OFFICE</span>
             </div>
-            <h1 className="editorial-headline text-4xl sm:text-5xl md:text-6xl text-white mt-3 tracking-tight">
+            <h1 className="editorial-headline text-4xl sm:text-5xl md:text-6xl text-slate-900 mt-3 tracking-tight">
               Moi Stadium Matchday Experience
             </h1>
-            <p className="text-sm md:text-base text-slate-200 mt-3 leading-relaxed max-w-xl">
+            <p className="text-sm md:text-base text-slate-600 mt-3 leading-relaxed max-w-xl">
               Secure official 3K FC matchday tickets with instant M-Pesa STK Push checkout and cryptographically signed QR entry passes. Specific stadium seating allocations subject to FKF venue confirmation.
             </p>
           </div>
@@ -72,10 +72,10 @@ export default async function TicketsPage({
             <img
               src="/images/3k-fc-fan-celebration.jpg"
               alt="Electric Matchday Atmosphere with 3K FC Supporters"
-              className="w-full h-full object-cover barca-img-zoom"
+              className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#081326] via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-4 right-4 inline-flex items-center gap-1 bg-black/80 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/40 text-emerald-400 text-xs font-bold">
+            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-white via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-4 right-4 inline-flex items-center gap-1 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 text-club-primary text-xs font-bold shadow-sm">
               <span>Electric Fortress Atmosphere</span>
             </div>
           </div>

@@ -32,9 +32,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
+        display: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
         sans: ['var(--font-barlow)', 'system-ui', 'sans-serif'],
-        condensed: ['var(--font-barlow-condensed)', 'system-ui', 'sans-serif'],
+        condensed: ['var(--font-orbitron)', 'system-ui', 'sans-serif'],
       },
     },
   },

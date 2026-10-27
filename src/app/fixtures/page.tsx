@@ -88,14 +88,14 @@ export default async function FixturesPage({
       </div>
 
       {/* Live Matchweek Flashscore Synchronization Notice */}
-      <div className="rounded-2xl bg-[#081326] text-white p-4 sm:p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs border border-white/10 shadow-md">
+      <div className="rounded-2xl bg-white text-slate-800 p-4 sm:p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <div>
-            <span className="font-extrabold text-club-accent uppercase tracking-wider block sm:inline mr-2">
+            <span className="athletic-label text-club-primary tracking-wider block sm:inline mr-2">
               Flashscore Live Matchweek Sync:
             </span>
-            <span className="text-slate-300">
+            <span className="text-slate-600">
               Fetched directly from Flashscore. Single matchweek fixture schedule updated in real time; finished fixtures are automatically removed.
             </span>
           </div>
@@ -104,7 +104,7 @@ export default async function FixturesPage({
           href="https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/"
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-club-accent font-bold hover:underline inline-flex items-center gap-1.5 transition border border-white/10"
+          className="shrink-0 px-3.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-club-primary font-bold hover:underline inline-flex items-center gap-1.5 transition border border-slate-200"
         >
           <span>Flashscore Official Fixtures</span>
           <ExternalLink className="w-3.5 h-3.5" />
