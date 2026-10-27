@@ -14,9 +14,6 @@ import {
   Home,
   Globe,
   ChevronDown,
-  Sparkles,
-  HeartHandshake,
-  PlayCircle,
   ShieldCheck,
 } from 'lucide-react';
 import { ClubCrest } from '@/components/ui/ClubCrest';
@@ -80,118 +77,77 @@ export function PublicHeader({
 
   return (
     <>
-      {/* TOP UTILITY BAR (Clean Light Luxury) */}
-      <div className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs py-2 px-4 select-none">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          {/* Club Slogan & Heritage */}
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-club-primary font-black uppercase tracking-widest text-[11px]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>God&apos;s Favourite Club</span>
-            </span>
-            <span className="text-slate-300 hidden sm:inline">•</span>
-            <span className="text-slate-500 font-semibold text-[11px] hidden sm:inline">
-              Home of Stars • Embu County, Kenya
-            </span>
-          </div>
-
-          {/* Quick Links & Language Switcher */}
-          <div className="flex items-center gap-4 text-[11px] font-bold">
-            <Link
-              href="/partners"
-              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-[#0B1B36] text-[#FFB800] text-[10px] font-black uppercase tracking-wider hover:opacity-90 transition border border-[#FFB800]/25"
-              title="Mozzart Bet Kenya — Principal Partner"
-            >
-              MOZZART
-            </Link>
-
-            <Link
-              href="/videos"
-              className="inline-flex items-center gap-1 text-slate-600 hover:text-club-secondary transition"
-            >
-              <PlayCircle className="w-3.5 h-3.5 text-club-secondary" />
-              <span className="hidden sm:inline">3K TV</span>
-            </Link>
-
-            <Link
-              href="/support-3k"
-              className="inline-flex items-center gap-1 text-club-primary hover:underline transition"
-            >
-              <HeartHandshake className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('nav.donations')}</span>
-            </Link>
-
-            {/* Language Switcher */}
-            <div
-              role="group"
-              aria-label="Language Switcher"
-              className="inline-flex items-center rounded-full bg-slate-200/70 p-0.5 border border-slate-300"
-            >
-              <button
-                type="button"
-                onClick={() => setLocale('en')}
-                className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
-                  locale === 'en'
-                    ? 'bg-club-secondary text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                aria-pressed={locale === 'en'}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale('sw')}
-                className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
-                  locale === 'sw'
-                    ? 'bg-club-secondary text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                aria-pressed={locale === 'sw'}
-              >
-                SW
-              </button>
-            </div>
-
-            {/* Member Sign-In */}
-            <Link
-              href="/account"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-800 font-bold transition border border-slate-300 shadow-xs"
-            >
-              <User className="w-3 h-3 text-club-secondary" />
-              <span>Sign In</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* STICKY MAIN HEADER (Clean White with Club Accent Texts) */}
+      {/* STICKY MAIN HEADER (Clean White with Enlarged Standalone Club Crest) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md text-slate-900 border-b border-slate-200 shadow-xs">
         {/* Brand Bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-18 md:h-20 gap-4">
-            {/* 3K FC Official Crest & Athletic Wordmark */}
-            <Link href="/" className="shrink-0 focus:outline-none flex items-center gap-3 group">
+          <div className="flex items-center justify-between min-h-[76px] sm:min-h-[88px] py-2 gap-4">
+            {/* 3K FC Official Standalone Enlarged Crest (No text, No slogan) */}
+            <Link
+              href="/"
+              className="shrink-0 focus:outline-none flex items-center group py-1"
+              aria-label="3K Football Club Official Homepage"
+            >
               <ClubCrest
-                size="md"
+                size="lg"
                 crestUrl={crestUrl}
                 crestConfirmed={crestConfirmed}
-                showWordmark={true}
-                darkText={true}
+                showWordmark={false}
               />
             </Link>
 
-            {/* Right Action Areas: Search, Tickets Pill, Store Pill, Mobile Toggle */}
-            <div className="flex items-center gap-2.5">
+            {/* Right Action Areas: Language Switcher, Sign In, Search, Tickets Pill, Store Pill, Mobile Toggle */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Language Switcher */}
+              <div
+                role="group"
+                aria-label="Language Switcher"
+                className="inline-flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLocale('en')}
+                  className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
+                    locale === 'en'
+                      ? 'bg-club-secondary text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  aria-pressed={locale === 'en'}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocale('sw')}
+                  className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
+                    locale === 'sw'
+                      ? 'bg-club-secondary text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  aria-pressed={locale === 'sw'}
+                >
+                  SW
+                </button>
+              </div>
+
               {/* Accessible Search Trigger */}
               <button
                 type="button"
                 onClick={() => setSearchOpen((prev) => !prev)}
                 aria-label={t('nav.search')}
-                className="p-2.5 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
               >
                 <Search className="w-4 h-4" />
               </button>
+
+              {/* Member Sign-In */}
+              <Link
+                href="/account"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition border border-slate-300 shadow-xs"
+              >
+                <User className="w-3.5 h-3.5 text-club-secondary" />
+                <span>Sign In</span>
+              </Link>
 
               {/* TICKETS Action Pill */}
               <Link

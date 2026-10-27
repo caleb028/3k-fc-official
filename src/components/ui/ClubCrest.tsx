@@ -20,8 +20,8 @@ export function ClubCrest({
   const dimensions = {
     sm: 'w-9 h-9',
     md: 'w-12 h-12',
-    lg: 'w-16 h-16',
-    xl: 'w-24 h-24',
+    lg: 'w-16 h-16 sm:w-20 sm:h-20',
+    xl: 'w-24 h-24 sm:w-28 sm:h-28',
     '2xl': 'w-32 h-32',
   }[size];
 
