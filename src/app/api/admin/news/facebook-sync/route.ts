@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       targetType: 'Article',
       targetId: 'batch-facebook-sync',
       after: {
-        syncedCount: result.syncedCount,
+        syncedArticles: result.syncedArticles,
+        syncedVideos: result.syncedVideos,
         source: result.source,
         facebookUrl: FACEBOOK_PAGE_URL,
       },
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      message: `Successfully synchronized ${result.syncedCount} team news stories from official Facebook page (${FACEBOOK_PAGE_URL}).`,
+      message: `Successfully synchronized ${result.syncedArticles} articles and ${result.syncedVideos} video features directly from Facebook (${FACEBOOK_PAGE_URL}).`,
       ...result,
     });
   } catch (err) {
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await syncFacebookTeamNews();
     return NextResponse.json({
-      message: `Facebook news feed synced (${result.syncedCount} stories).`,
+      message: `Facebook news and video feed synced (${result.syncedArticles} articles, ${result.syncedVideos} videos).`,
       ...result,
     });
   } catch (err) {

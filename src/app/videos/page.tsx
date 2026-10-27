@@ -1,6 +1,7 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { ClickToLoadVideoCard } from '@/components/media/ClickToLoadVideoCard';
+import { syncFacebookTeamNews } from '@/lib/facebook';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export default async function VideosPage({
 }) {
   const params = await searchParams;
   const selectedCat = (params.category || 'ALL').toUpperCase();
+
+  // Automatically sync newly uploaded photos & videos from official club channels
+  await syncFacebookTeamNews().catch(() => null);
 
   const categories = [
     'ALL',
@@ -40,7 +44,7 @@ export default async function VideosPage({
           3K FC TV &amp; Video Hub
         </h1>
         <p className="text-sm text-slate-600 mt-2 max-w-2xl">
-          Watch verified match highlights, tactical coach interviews, training sessions in Embu, and club history documentaries. Uses click-to-load streaming to conserve mobile data.
+          Watch verified match highlights, tactical coach interviews, training sessions in Embu, and club documentary features. Streams on-demand with click-to-load data saving.
         </p>
       </div>
 
@@ -72,6 +76,8 @@ export default async function VideosPage({
               youtubeVideoId={vid.youtubeVideoId}
               durationLabel={vid.durationLabel}
               hasCaptions={vid.hasCaptions}
+              sourceUrl={vid.sourceUrl}
+              thumbnailUrl={vid.thumbnailUrl || undefined}
             />
           ))}
         </div>

@@ -5,6 +5,13 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.fbcdn.net' },
+      { protocol: 'https', hostname: 'graph.facebook.com' },
+      { protocol: 'https', hostname: '**.facebook.com' },
+    ],
+  },
   outputFileTracingIncludes: {
     '/**': ['./prisma/seed.db'],
   },
