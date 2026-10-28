@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
 import { recordAuditLog } from '@/lib/audit';
+import { processFinishedFixture, retireFixturePreMatchNews } from '@/lib/match-completion';
 
 const confirmResultSchema = z.object({
   fixtureId: z.string().min(1),
@@ -61,7 +62,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Automatically generate or update Match Report if provided or auto-generate summary
+    // 2. Automatically retire pre-match previews and build-up news for this fixture
+    await retireFixturePreMatchNews(fixtureId).catch(() => {});
+
+    // 3. Automatically generate or update Match Report if provided or auto-generate summary
     const headline =
       rest.reportHeadline ||
       `${before.homeClub.name} ${homeScore} - ${awayScore} ${before.awayClub.name}: Official Match Summary`;

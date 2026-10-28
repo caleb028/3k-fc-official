@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
 import { recordAuditLog } from '@/lib/audit';
+import { processFinishedFixture } from '@/lib/match-completion';
 
 const updateScoreStatusSchema = z.object({
   fixtureId: z.string().min(1),
@@ -68,6 +69,17 @@ export async function POST(req: NextRequest) {
           resultUpdatedAt: new Date(),
         },
       });
+
+      if (parsed.data.status === 'FULL_TIME') {
+        await processFinishedFixture({
+          fixtureId: updated.id,
+          homeScore: parsed.data.homeScore ?? 0,
+          awayScore: parsed.data.awayScore ?? 0,
+          halfTimeHomeScore: parsed.data.halfTimeHomeScore,
+          halfTimeAwayScore: parsed.data.halfTimeAwayScore,
+          source: 'ADMIN_VERIFIED',
+        }).catch((err) => console.error('Error auto-processing finished match:', err));
+      }
 
       await recordAuditLog({
         actorId: admin.id,

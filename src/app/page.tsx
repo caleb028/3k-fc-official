@@ -22,12 +22,16 @@ import { AuthenticMediaPlaceholder } from '@/components/ui/AuthenticMediaPlaceho
 import { ClubCrest } from '@/components/ui/ClubCrest';
 import { syncFlashscoreMatchweekFixture, syncFlashscoreStandings } from '@/lib/flashscore';
 import { syncFacebookTeamNews } from '@/lib/facebook';
+import { checkAndCompletePastFixtures } from '@/lib/match-completion';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const cookieStore = await cookies();
   const locale: Locale = cookieStore.get('3kfc_locale')?.value === 'sw' ? 'sw' : 'en';
+
+  // Automatically retire finished match previews and ensure results are posted
+  await checkAndCompletePastFixtures().catch(() => null);
 
   const [
     settings,

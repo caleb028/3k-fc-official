@@ -2,10 +2,13 @@ import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ShieldCheck, ArrowRight, FileText, Trophy } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { checkAndCompletePastFixtures } from '@/lib/match-completion';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ResultsPage() {
+  await checkAndCompletePastFixtures().catch(() => null);
+
   const [completedFixtures, nslPromotionRecord] = await Promise.all([
     prisma.fixture.findMany({
       where: { status: 'FULL_TIME' },

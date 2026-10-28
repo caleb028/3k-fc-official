@@ -14,6 +14,7 @@ import {
 import { prisma } from '@/lib/prisma';
 import { ClubCrest } from '@/components/ui/ClubCrest';
 import { syncFlashscoreMatchweekFixture } from '@/lib/flashscore';
+import { checkAndCompletePastFixtures } from '@/lib/match-completion';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,9 @@ export default async function FixturesPage({
   const params = await searchParams;
   const selectedCompetition = params.competition || 'all';
   const selectedVenue = params.venue || 'all';
+
+  // Transition any finished fixtures to FULL_TIME and post results
+  await checkAndCompletePastFixtures().catch(() => null);
 
   const [competitions, seasons, fixtures] = await Promise.all([
     prisma.competition.findMany({ orderBy: { tier: 'asc' } }),

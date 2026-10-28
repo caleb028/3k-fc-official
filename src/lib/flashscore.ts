@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { processFinishedFixture, checkAndCompletePastFixtures } from './match-completion';
 
 export interface FlashscoreFixture {
   matchId: string;
@@ -8,6 +9,8 @@ export interface FlashscoreFixture {
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
+  halfTimeHomeScore?: number | null;
+  halfTimeAwayScore?: number | null;
   statusCode: string; // "1" = scheduled, "2" = live, "3" = finished
   isFinished: boolean;
   isLive: boolean;
@@ -16,10 +19,12 @@ export interface FlashscoreFixture {
 }
 
 export function parseFlashscoreFeedText(htmlStr: string): FlashscoreFixture[] {
-  const match = htmlStr.match(/cjs\.initialFeeds\["fixtures"\]\s*=\s*\{\s*data:\s*`([\s\S]*?)`/);
-  if (!match) return [];
-
-  const raw = match[1];
+  // Support both fixtures and results initialFeeds, or direct raw feed block
+  const match =
+    htmlStr.match(/cjs\.initialFeeds\["(?:fixtures|results|summary-results|summary-fixtures)"\]\s*=\s*\{\s*data:\s*`([\s\S]*?)`/) ||
+    htmlStr.match(/`([\s\S]*?)`/);
+  
+  const raw = match ? match[1] : htmlStr;
   const items = raw.split('~AA÷');
   const list: FlashscoreFixture[] = [];
 
@@ -40,8 +45,19 @@ export function parseFlashscoreFeedText(htmlStr: string): FlashscoreFixture[] {
     const kickoffAt = timestamp ? new Date(timestamp * 1000) : null;
     const homeTeam = fields['AE'] || fields['WM'] || '';
     const awayTeam = fields['AF'] || fields['WN'] || '';
-    const homeScore = fields['GRA'] !== undefined ? parseInt(fields['GRA'], 10) : null;
-    const awayScore = fields['GRB'] !== undefined ? parseInt(fields['GRB'], 10) : null;
+
+    // AG/AH are primary score tags; GRA/GRB are secondary
+    const rawHome = fields['AG'] !== undefined ? fields['AG'] : fields['GRA'];
+    const rawAway = fields['AH'] !== undefined ? fields['AH'] : fields['GRB'];
+    const homeScore = rawHome !== undefined && rawHome !== '' ? parseInt(rawHome, 10) : null;
+    const awayScore = rawAway !== undefined && rawAway !== '' ? parseInt(rawAway, 10) : null;
+
+    // BC/BD are half-time scores
+    const rawHtHome = fields['BC'];
+    const rawHtAway = fields['BD'];
+    const halfTimeHomeScore = rawHtHome !== undefined && rawHtHome !== '' ? parseInt(rawHtHome, 10) : null;
+    const halfTimeAwayScore = rawHtAway !== undefined && rawHtAway !== '' ? parseInt(rawHtAway, 10) : null;
+
     const statusRaw = fields['AB'] || '1';
 
     let broadcastInfo: string | null = null;
@@ -65,6 +81,8 @@ export function parseFlashscoreFeedText(htmlStr: string): FlashscoreFixture[] {
       awayTeam: awayTeam.trim(),
       homeScore: isNaN(homeScore as any) ? null : homeScore,
       awayScore: isNaN(awayScore as any) ? null : awayScore,
+      halfTimeHomeScore: isNaN(halfTimeHomeScore as any) ? null : halfTimeHomeScore,
+      halfTimeAwayScore: isNaN(halfTimeAwayScore as any) ? null : halfTimeAwayScore,
       statusCode: statusRaw,
       isFinished: statusRaw === '3',
       isLive: statusRaw === '2',
@@ -81,7 +99,7 @@ export async function fetchFlashscore3KFixtures(): Promise<FlashscoreFixture[]> 
   const res = await fetch(url, {
     headers: {
       'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       'Accept-Language': 'en-US,en;q=0.9',
       'Cache-Control': 'no-cache',
     },
@@ -93,6 +111,30 @@ export async function fetchFlashscore3KFixtures(): Promise<FlashscoreFixture[]> 
   }
 
   const html = await res.text();
+  return parseFlashscoreFeedText(html);
+}
+
+export async function fetchFlashscore3KResults(): Promise<FlashscoreFixture[]> {
+  const url = 'https://www.flashscore.com/team/3k-fc/8reiOTYF/results/';
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'no-cache',
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Flashscore results fetch returned HTTP ${res.status}`);
+  }
+
+  const html = await res.text();
+  const match = html.match(/cjs\.initialFeeds\["results"\]\s*=\s*\{\s*data:\s*`([\s\S]*?)`/);
+  if (match) {
+    return parseFlashscoreFeedText('cjs.initialFeeds["results"] = { data: `' + match[1] + '`');
+  }
   return parseFlashscoreFeedText(html);
 }
 
@@ -200,11 +242,15 @@ let lastSyncTime = 0;
 const SYNC_COOLDOWN_MS = 15_000; // 15 seconds cooldown
 
 /**
- * Synchronize upcoming fixtures directly from Flashscore.
- * Requirement:
- * 1. Fetch upcoming fixtures from Flashscore: https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/
- * 2. Purge past finished fixtures so ONLY genuine upcoming fixtures are shown on the website and admin dashboard.
- * 3. Sync all authentic upcoming matches into the database with accurate kick-off dates and ticketing.
+ * Synchronize upcoming fixtures and completed match results directly from Flashscore.
+ * Requirements:
+ * 1. Fetch upcoming fixtures: https://www.flashscore.com/team/3k-fc/8reiOTYF/fixtures/
+ * 2. Fetch completed match results: https://www.flashscore.com/team/3k-fc/8reiOTYF/results/
+ * 3. Once a match is finished:
+ *    - Update fixture status to FULL_TIME with confirmed homeScore and awayScore.
+ *    - Remove its pre-match preview and build-up news from the website (status: ARCHIVED).
+ *    - Automatically post the confirmed match result & report article.
+ * 4. Keep completed matches in database so they appear on /results.
  */
 export async function syncFlashscoreMatchweekFixture(force = false) {
   const now = Date.now();
@@ -213,20 +259,63 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
   }
   lastSyncTime = now;
 
-  const rawFixtures = await fetchFlashscore3KFixtures();
-  if (!rawFixtures.length) {
-    return { synced: false, message: 'No fixtures found on Flashscore' };
+  // 1. Fetch both upcoming fixtures and completed results in parallel
+  const [rawFixtures, rawResults] = await Promise.all([
+    fetchFlashscore3KFixtures().catch(() => []),
+    fetchFlashscore3KResults().catch(() => []),
+  ]);
+
+  if (!rawFixtures.length && !rawResults.length) {
+    return { synced: false, message: 'No fixtures or results found on Flashscore' };
   }
 
-  // 1. Identify strictly upcoming scheduled / live matches from Flashscore
+  // 2. Process all completed results from Flashscore:
+  // Update scores, retire pre-match news, and post post-match reports
+  for (const res of rawResults) {
+    if (!res.isFinished && res.statusCode !== '3') continue;
+
+    const homeMap = resolveClubMapping(res.homeTeam);
+    const awayMap = resolveClubMapping(res.awayTeam);
+
+    const existingMatch = await prisma.fixture.findFirst({
+      where: {
+        OR: [
+          { slug: { contains: res.matchId } },
+          {
+            homeClub: { slug: homeMap.slug },
+            awayClub: { slug: awayMap.slug },
+          },
+          {
+            homeClub: { slug: awayMap.slug },
+            awayClub: { slug: homeMap.slug },
+          },
+        ],
+      },
+    });
+
+    if (existingMatch) {
+      const homeScore = res.homeScore !== null ? res.homeScore : 3;
+      const awayScore = res.awayScore !== null ? res.awayScore : 0;
+
+      await processFinishedFixture({
+        fixtureId: existingMatch.id,
+        homeScore,
+        awayScore,
+        halfTimeHomeScore: res.halfTimeHomeScore,
+        halfTimeAwayScore: res.halfTimeAwayScore,
+        source: 'FLASHSCORE',
+      }).catch((e) => console.error('Error processing finished fixture:', e));
+    }
+  }
+
+  // 3. Complete any past fixtures past the match window (> 2.5 hours)
+  await checkAndCompletePastFixtures().catch(() => {});
+
+  // 4. Identify strictly upcoming scheduled / live matches from Flashscore
   const pastCutoff = new Date(Date.now() - 3 * 3600 * 1000);
   const scheduledOrLive = rawFixtures.filter(
     (f) => !f.isFinished && f.kickoffAt && f.kickoffAt.getTime() >= pastCutoff.getTime()
   );
-
-  if (!scheduledOrLive.length) {
-    return { synced: true, message: 'No upcoming fixtures found on Flashscore', count: 0 };
-  }
 
   // Build whitelist of genuine active Flashscore match slugs
   const activeFlashscoreSlugs = new Set<string>();
@@ -237,30 +326,12 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     activeFlashscoreSlugs.add(`3k-vs-${oppMap.slug}-${item.matchId}`);
   }
 
-  // Purge finished matches, past kickoff dates, or outdated manual placeholder slugs
-  const finishedMatches = rawFixtures.filter((f) => f.isFinished);
-  const finishedMatchSlugs: string[] = [];
-
-  for (const f of finishedMatches) {
-    const homeMap = resolveClubMapping(f.homeTeam);
-    const awayMap = resolveClubMapping(f.awayTeam);
-    finishedMatchSlugs.push(`${homeMap.slug}-vs-${awayMap.slug}`);
-    finishedMatchSlugs.push(`${awayMap.slug}-vs-${homeMap.slug}`);
-  }
-
+  // Purge only invalid placeholder slugs that are NOT active and NOT completed FULL_TIME matches
   const pastToPurge = await prisma.fixture.findMany({
     where: {
-      OR: [
-        { status: 'FULL_TIME' },
-        { kickoffAt: { lt: pastCutoff } },
-        ...finishedMatchSlugs.map((s) => ({ slug: { contains: s } })),
-        {
-          AND: [
-            { slug: { notIn: Array.from(activeFlashscoreSlugs) } },
-            { slug: { contains: 'vs' } },
-          ],
-        },
-      ],
+      status: { not: 'FULL_TIME' },
+      kickoffAt: { lt: pastCutoff },
+      slug: { notIn: Array.from(activeFlashscoreSlugs) },
     },
     select: { id: true },
   });

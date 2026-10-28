@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { Camera, ShieldCheck } from 'lucide-react';
 
 interface AuthenticMediaPlaceholderProps {
@@ -13,8 +15,8 @@ interface AuthenticMediaPlaceholderProps {
 
 /**
  * 3K FC Media Component with Direct Image Display & Clean Light Aesthetic:
- * Always displays uploaded or selected photos. When no image is provided,
- * shows a clean, high-contrast athletic placeholder.
+ * Always displays uploaded or selected photos. When no image is provided or fails,
+ * recovers seamlessly with authentic club photography.
  */
 export function AuthenticMediaPlaceholder({
   category,
@@ -25,6 +27,8 @@ export function AuthenticMediaPlaceholder({
   isVerifiedAsset = true,
   className = '',
 }: AuthenticMediaPlaceholderProps) {
+  const [imgError, setImgError] = useState(false);
+
   const aspectClass = {
     video: 'aspect-video',
     square: 'aspect-square',
@@ -32,15 +36,19 @@ export function AuthenticMediaPlaceholder({
     hero: 'min-h-[380px] md:min-h-[500px]',
   }[aspectRatio];
 
+  // Resolve final image source with fallback
+  const resolvedImg = imgError ? '/images/3k-fc-match-action.jpg' : imageUrl;
+
   // If image URL is present, render photo directly
-  if (imageUrl) {
+  if (resolvedImg) {
     return (
       <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${className}`}>
         <img
-          src={imageUrl}
+          src={resolvedImg}
           alt={label}
           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           loading="lazy"
+          onError={() => setImgError(true)}
         />
         {/* Subtle gradient scrim at bottom for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent pointer-events-none" />
