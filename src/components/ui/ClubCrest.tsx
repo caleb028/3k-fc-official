@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 
 interface ClubCrestProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -17,6 +19,8 @@ export function ClubCrest({
   className = '',
   darkText = false,
 }: ClubCrestProps) {
+  const [imageError, setImageError] = useState(false);
+
   const dimensions = {
     sm: 'w-9 h-9',
     md: 'w-10 h-10 md:w-12 md:h-12',
@@ -30,28 +34,23 @@ export function ClubCrest({
   return (
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
       {crestConfirmed ? (
-        <div className={`${dimensions} shrink-0 relative rounded-full overflow-hidden bg-white shadow-md border-2 border-club-blue`}>
-          <img
-            src={resolvedCrestUrl}
-            alt="3K Football Club Official Crest"
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              // Graceful fallback to SVG if image not yet loaded
-              e.currentTarget.style.display = 'none';
-              const parent = e.currentTarget.parentElement;
-              if (parent) {
-                parent.innerHTML = `
-                  <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="48" fill="#0E4494" />
-                    <circle cx="50" cy="50" r="44" fill="#E11D2A" />
-                    <circle cx="50" cy="50" r="32" fill="#FFFFFF" />
-                    <path d="M50 24 L56 38 L70 38 L59 47 L63 61 L50 52 L37 61 L41 47 L30 38 L44 38 Z" fill="#D4AF37" />
-                    <text x="50" y="74" font-size="10" font-weight="900" fill="#0E4494" text-anchor="middle" font-family="sans-serif">3K FC</text>
-                  </svg>
-                `;
-              }
-            }}
-          />
+        <div className={`${dimensions} shrink-0 relative rounded-full overflow-hidden bg-white shadow-md border-2 border-club-blue flex items-center justify-center`}>
+          {!imageError ? (
+            <img
+              src={resolvedCrestUrl}
+              alt="3K Football Club Official Crest"
+              className="w-full h-full object-contain"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <svg viewBox="0 0 100 100" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="48" fill="#0E4494" />
+              <circle cx="50" cy="50" r="44" fill="#E11D2A" />
+              <circle cx="50" cy="32" r="32" fill="#FFFFFF" />
+              <path d="M50 24 L56 38 L70 38 L59 47 L63 61 L50 52 L37 61 L41 47 L30 38 L44 38 Z" fill="#D4AF37" />
+              <text x="50" y="74" fontSize="10" fontWeight="900" fill="#0E4494" textAnchor="middle" fontFamily="sans-serif">3K FC</text>
+            </svg>
+          )}
         </div>
       ) : (
         <div
