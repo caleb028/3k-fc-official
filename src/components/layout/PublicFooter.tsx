@@ -68,7 +68,7 @@ export function PublicFooter() {
               <MapPin className="w-4 h-4 text-club-primary shrink-0 mt-0.5" />
               <span>
                 Moi Stadium, Embu County, Kenya{' '}
-                <em className="text-slate-500">(Subject to official match venue confirmation)</em>
+                <span className="text-slate-500 font-medium">• Official Home Fortress</span>
               </span>
             </div>
             <div className="flex items-center gap-2">

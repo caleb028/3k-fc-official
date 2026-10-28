@@ -95,7 +95,7 @@ export default async function RootLayout({
             venueConfirmed={settings?.homeStadiumConfirmed || false}
             sponsorConfirmed={settings?.mainSponsorConfirmed || false}
           />
-          <main id="main-content" className="flex-1">
+          <main id="main-content" className="flex-1 pb-16 md:pb-0">
             {children}
           </main>
           <PublicFooter />
