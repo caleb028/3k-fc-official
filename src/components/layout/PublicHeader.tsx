@@ -7,17 +7,102 @@ import {
   Search,
   Menu,
   X,
-  Ticket,
-  ShoppingBag,
   User,
-  Calendar,
-  Home,
-  Globe,
+  ShoppingBag,
   ChevronDown,
-  ShieldCheck,
+  ChevronRight,
+  Home,
+  Calendar,
+  Ticket,
 } from 'lucide-react';
 import { ClubCrest } from '@/components/ui/ClubCrest';
 import { useLanguage } from '@/components/providers/LanguageProvider';
+
+interface NavItem {
+  key: string;
+  label: string;
+  href?: string;
+  children?: { href: string; label: string; badge?: string }[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    key: 'news',
+    label: 'News',
+    href: '/news',
+  },
+  {
+    key: 'video',
+    label: 'Video',
+    href: '/videos',
+    children: [
+      { href: '/videos', label: 'All 3K TV Videos' },
+      { href: '/videos?category=HIGHLIGHTS', label: 'Match Highlights' },
+      { href: '/videos?category=INTERVIEWS', label: 'Interviews & Reactions' },
+      { href: '/videos?category=TRAINING', label: 'Training Sessions' },
+      { href: '/videos?category=BEHIND_THE_SCENES', label: 'Behind The Scenes' },
+    ],
+  },
+  {
+    key: 'fixtures',
+    label: 'Fixtures',
+    href: '/fixtures',
+    children: [
+      { href: '/fixtures', label: 'Upcoming Fixtures' },
+      { href: '/results', label: 'Match Results' },
+      { href: '/table', label: 'League Standings' },
+      { href: '/matches', label: 'Live Match Centre' },
+    ],
+  },
+  {
+    key: 'tickets',
+    label: 'Tickets',
+    href: '/tickets',
+    children: [
+      { href: '/tickets', label: 'Matchday Tickets' },
+      { href: '/tickets#memberships', label: 'Season Memberships' },
+      { href: '/ticket-terms', label: 'Gate QR & Entry Policy' },
+      { href: '/news/fb-official-fan-travel-convoy-and-ticketing-advisory', label: 'Away Travel Advisory' },
+    ],
+  },
+  {
+    key: 'shop',
+    label: 'Shop',
+    href: '/shop',
+    children: [
+      { href: '/shop', label: 'Official Club Store' },
+      { href: '/shop?category=KITS', label: 'Match Kits (Home, Away, Third)' },
+      { href: '/shop?category=TRAINING', label: 'Training & Warmup Gear' },
+      { href: '/shop?category=ACCESSORIES', label: 'Accessories & Memorabilia' },
+    ],
+  },
+  {
+    key: 'players',
+    label: 'Players',
+    href: '/team',
+  },
+  {
+    key: 'club',
+    label: 'Club',
+    href: '/club',
+    children: [
+      { href: '/club', label: 'Club Heritage & Story' },
+      { href: '/club#stadium', label: 'Moi Stadium Fortress' },
+      { href: '/supporters', label: 'Supporters Club & Branches' },
+      { href: '/team#staff', label: 'Technical Bench & Management' },
+    ],
+  },
+  {
+    key: 'more',
+    label: 'More',
+    children: [
+      { href: '/partners', label: 'Official Partners & Sponsors' },
+      { href: '/support-3k', label: 'Support 3K FC Fund' },
+      { href: '/contact', label: 'Contact & Press Desk' },
+      { href: '/account', label: 'Fan Account & Digital Pass' },
+    ],
+  },
+];
 
 interface PublicHeaderProps {
   paletteStatus?: string;
@@ -34,17 +119,28 @@ export function PublicHeader({
   const pathname = usePathname();
   const router = useRouter();
   const { locale, setLocale, t } = useLanguage();
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileExpandedSection, setMobileExpandedSection] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // Close "MORE" dropdown on outside click
+  const navContainerRef = useRef<HTMLDivElement | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setOpenDropdown(null);
+    setMobileMenuOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setMoreMenuOpen(false);
+      if (navContainerRef.current && !navContainerRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -56,6 +152,17 @@ export function PublicHeader({
     return null;
   }
 
+  const handleMouseEnter = (key: string) => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    setOpenDropdown(key);
+  };
+
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setOpenDropdown(null);
+    }, 180);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -63,26 +170,26 @@ export function PublicHeader({
     router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
   };
 
-  const navLinks = [
-    { href: '/team', label: 'FIRST TEAM' },
-    { href: '/fixtures', label: 'MATCHES' },
-    { href: '/table', label: 'STANDINGS' },
-    { href: '/news', label: 'NEWS' },
-    { href: '/tickets', label: 'TICKETS' },
-    { href: '/shop', label: 'STORE' },
-    { href: '/supporters', label: 'SUPPORTERS' },
-    { href: '/club', label: 'HERITAGE' },
-    { href: '/partners', label: 'PARTNERS' },
-  ];
+  const isItemActive = (item: NavItem): boolean => {
+    if (item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)))) {
+      return true;
+    }
+    if (item.children?.some((child) => pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href.split('?')[0])))) {
+      return true;
+    }
+    return false;
+  };
 
   return (
     <>
-      {/* STICKY MAIN HEADER (Clean White with Enlarged Standalone Club Crest) */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md text-slate-900 border-b border-slate-200 shadow-xs">
-        {/* Brand Bar */}
+      {/* SINGLE UNIFIED STICKY NAVBAR (Man City inspired luxury athletic bar) */}
+      <header
+        ref={navContainerRef}
+        className="sticky top-0 z-50 bg-white/95 backdrop-blur-md text-slate-900 border-b border-slate-200 shadow-xs"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between min-h-[76px] sm:min-h-[88px] py-2 gap-4">
-            {/* 3K FC Official Standalone Enlarged Crest (No text, No slogan) */}
+          <div className="flex items-center justify-between h-18 md:h-20 gap-3 md:gap-6">
+            {/* 1. STANDALONE ENLARGED CLUB CREST (No text, No slogan) */}
             <Link
               href="/"
               className="shrink-0 focus:outline-none flex items-center group py-1"
@@ -96,18 +203,100 @@ export function PublicHeader({
               />
             </Link>
 
-            {/* Right Action Areas: Language Switcher, Sign In, Search, Tickets Pill, Store Pill, Mobile Toggle */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Language Switcher */}
+            {/* 2. UNIFIED HORIZONTAL NAVIGATION BAR (Title Case with Dropdowns) */}
+            <nav
+              aria-label="Primary Navigation"
+              className="hidden xl:flex items-center gap-1 lg:gap-2 flex-1 justify-start ml-2"
+            >
+              {NAV_ITEMS.map((item) => {
+                const hasChildren = !!item.children && item.children.length > 0;
+                const isOpen = openDropdown === item.key;
+                const active = isItemActive(item);
+
+                return (
+                  <div
+                    key={item.key}
+                    className="relative"
+                    onMouseEnter={() => (hasChildren ? handleMouseEnter(item.key) : undefined)}
+                    onMouseLeave={() => (hasChildren ? handleMouseLeave() : undefined)}
+                  >
+                    {hasChildren ? (
+                      <button
+                        type="button"
+                        onClick={() => setOpenDropdown(isOpen ? null : item.key)}
+                        aria-expanded={isOpen}
+                        className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[15px] font-semibold transition-colors ${
+                          active
+                            ? 'text-club-primary font-bold'
+                            : 'text-slate-800 hover:text-club-primary hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                            isOpen ? 'rotate-180 text-club-primary' : 'opacity-60'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      <Link
+                        href={item.href || '#'}
+                        className={`inline-flex items-center px-3 py-2 rounded-lg text-[15px] font-semibold transition-colors ${
+                          active
+                            ? 'text-club-primary font-bold'
+                            : 'text-slate-800 hover:text-club-primary hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                      </Link>
+                    )}
+
+                    {/* Floating Dropdown Menu Panel */}
+                    {hasChildren && isOpen && (
+                      <div
+                        className="absolute left-0 top-full pt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                        onMouseEnter={() => handleMouseEnter(item.key)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <div className="w-64 rounded-2xl bg-white border border-slate-200 shadow-2xl py-2.5 px-1.5 backdrop-blur-md">
+                          {item.children!.map((child) => {
+                            const isChildActive = pathname === child.href.split('?')[0];
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setOpenDropdown(null)}
+                                className={`px-3.5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-between group ${
+                                  isChildActive
+                                    ? 'bg-slate-50 text-club-primary'
+                                    : 'text-slate-700 hover:bg-slate-50 hover:text-club-primary'
+                                }`}
+                              >
+                                <span>{child.label}</span>
+                                <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-club-primary transition-opacity" />
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+
+            {/* 3. RIGHT ACTION SUITE: Search, Sign In, Cart, Presented by Mozzart, Lang, Mobile Menu */}
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Language Switcher (EN / SW) */}
               <div
                 role="group"
                 aria-label="Language Switcher"
-                className="inline-flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300"
+                className="hidden sm:inline-flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300 text-[10px] font-black"
               >
                 <button
                   type="button"
                   onClick={() => setLocale('en')}
-                  className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
+                  className={`px-2 py-0.5 rounded-full transition ${
                     locale === 'en'
                       ? 'bg-club-secondary text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -119,7 +308,7 @@ export function PublicHeader({
                 <button
                   type="button"
                   onClick={() => setLocale('sw')}
-                  className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black transition ${
+                  className={`px-2 py-0.5 rounded-full transition ${
                     locale === 'sw'
                       ? 'bg-club-secondary text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -135,39 +324,51 @@ export function PublicHeader({
                 type="button"
                 onClick={() => setSearchOpen((prev) => !prev)}
                 aria-label={t('nav.search')}
-                className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                className="p-2 rounded-full text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition"
               >
-                <Search className="w-4 h-4" />
+                <Search className="w-5 h-5" />
               </button>
 
-              {/* Member Sign-In */}
+              {/* Sign in Pill Button (Avatar circle + 'Sign in') */}
               <Link
                 href="/account"
-                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition border border-slate-300 shadow-xs"
+                className="hidden md:inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/90 border border-slate-300/80 text-sm font-semibold text-slate-900 transition shadow-xs group"
+                title="Member Sign in"
               >
-                <User className="w-3.5 h-3.5 text-club-secondary" />
-                <span>Sign In</span>
+                <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0">
+                  <User className="w-3.5 h-3.5" />
+                </div>
+                <span>Sign in</span>
               </Link>
 
-              {/* TICKETS Action Pill */}
-              <Link
-                href="/tickets"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-club-primary hover:bg-red-700 text-white font-extrabold shadow-sm transition transform hover:-translate-y-0.5"
-              >
-                <Ticket className="w-3.5 h-3.5" />
-                <span>TICKETS</span>
-              </Link>
-
-              {/* STORE Action Pill */}
+              {/* Shopping Bag / Cart with Badge */}
               <Link
                 href="/shop"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full athletic-label text-xs tracking-wider bg-club-secondary hover:bg-blue-800 text-white font-extrabold shadow-sm transition transform hover:-translate-y-0.5"
+                className="relative p-2 rounded-full text-slate-800 hover:text-slate-950 hover:bg-slate-100 transition flex items-center justify-center"
+                aria-label="Shopping Bag"
+                title="Official Store & Cart"
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>STORE</span>
+                <ShoppingBag className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                  0
+                </span>
               </Link>
 
-              {/* Mobile Menu Button */}
+              {/* Sponsor Integration: PRESENTED BY MOZZART (Exact match to Wix on Man City bar) */}
+              <Link
+                href="/partners"
+                className="hidden lg:flex flex-col items-start leading-none pl-3 border-l border-slate-200 group"
+                title="Mozzart Bet Kenya — Principal Partner"
+              >
+                <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                  PRESENTED BY
+                </span>
+                <span className="sponsor-badge-mozzart text-xs px-2 py-0.5 mt-0.5 group-hover:scale-105 transition-transform">
+                  MOZZART
+                </span>
+              </Link>
+
+              {/* Mobile Menu Toggle Button */}
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -181,192 +382,7 @@ export function PublicHeader({
           </div>
         </div>
 
-        {/* PRIMARY NAVIGATION BAR (Matches Uploaded Screenshot Exactly: FIRST TEAM, MATCHES, STANDINGS, NEWS, TICKETS, STORE, SUPPORTERS, HERITAGE, PARTNERS, MORE ˇ) */}
-        <div className="border-t border-slate-200 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <nav
-              aria-label="Official Club Navigation"
-              className="flex items-center justify-start md:justify-center gap-5 sm:gap-7 md:gap-8 lg:gap-10 py-2.5 overflow-x-auto no-scrollbar scroll-smooth"
-            >
-              {/* 1. FIRST TEAM (Two lines stacked exactly as in image) */}
-              <Link
-                href="/team"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-1 flex flex-col items-center justify-center text-center leading-none ${
-                  pathname === '/team' || pathname?.startsWith('/team/')
-                    ? 'text-club-primary font-black border-b-2 border-club-primary pb-0.5'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span className="block text-[11px] font-extrabold tracking-wider leading-none">FIRST</span>
-                <span className="block text-[11px] font-extrabold tracking-wider leading-none mt-0.5">TEAM</span>
-              </Link>
-
-              {/* 2. MATCHES */}
-              <Link
-                href="/fixtures"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/fixtures' || pathname?.startsWith('/fixtures') || pathname === '/matches'
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>MATCHES</span>
-              </Link>
-
-              {/* 3. STANDINGS */}
-              <Link
-                href="/table"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/table' || pathname?.startsWith('/table') || pathname === '/standings'
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>STANDINGS</span>
-              </Link>
-
-              {/* 4. NEWS */}
-              <Link
-                href="/news"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/news' || pathname?.startsWith('/news')
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>NEWS</span>
-              </Link>
-
-              {/* 5. TICKETS */}
-              <Link
-                href="/tickets"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/tickets' || pathname?.startsWith('/tickets')
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>TICKETS</span>
-              </Link>
-
-              {/* 6. STORE */}
-              <Link
-                href="/shop"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/shop' || pathname?.startsWith('/shop') || pathname === '/store'
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>STORE</span>
-              </Link>
-
-              {/* 7. SUPPORTERS */}
-              <Link
-                href="/supporters"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/supporters' || pathname?.startsWith('/supporters')
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>SUPPORTERS</span>
-              </Link>
-
-              {/* 8. HERITAGE */}
-              <Link
-                href="/club"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/club' || pathname?.startsWith('/club') || pathname === '/heritage'
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>HERITAGE</span>
-              </Link>
-
-              {/* 9. PARTNERS */}
-              <Link
-                href="/partners"
-                className={`shrink-0 athletic-label text-xs tracking-wider transition px-1 py-2 ${
-                  pathname === '/partners' || pathname?.startsWith('/partners')
-                    ? 'text-club-primary font-black border-b-2 border-club-primary'
-                    : 'text-slate-800 hover:text-club-primary font-bold'
-                }`}
-              >
-                <span>PARTNERS</span>
-              </Link>
-
-              {/* 10. MORE ˇ (Interactive Dropdown) */}
-              <div className="relative shrink-0" ref={moreMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setMoreMenuOpen((prev) => !prev)}
-                  className={`athletic-label text-xs tracking-wider transition px-1 py-2 inline-flex items-center gap-1 font-bold ${
-                    moreMenuOpen ? 'text-club-primary font-black' : 'text-slate-800 hover:text-club-primary'
-                  }`}
-                  aria-expanded={moreMenuOpen}
-                >
-                  <span>MORE</span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                      moreMenuOpen ? 'rotate-180 text-club-primary' : ''
-                    }`}
-                  />
-                </button>
-
-                {moreMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-slate-200 shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                    <Link
-                      href="/results"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Confirmed Results
-                    </Link>
-                    <Link
-                      href="/videos"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Video Hub &amp; Highlights
-                    </Link>
-                    <Link
-                      href="/support-3k"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Support 3K Donations
-                    </Link>
-                    <Link
-                      href="/contact"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Contact &amp; Press Desk
-                    </Link>
-                    <Link
-                      href="/club"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Moi Stadium Fortress
-                    </Link>
-                    <Link
-                      href="/account"
-                      onClick={() => setMoreMenuOpen(false)}
-                      className="block px-4 py-2.5 text-xs athletic-label text-slate-800 hover:bg-slate-50 hover:text-club-primary transition font-bold"
-                    >
-                      Fan Account &amp; Pass
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </nav>
-          </div>
-        </div>
-
-        {/* Search Drawer Modal */}
+        {/* Global Search Drawer Modal */}
         {searchOpen && (
           <div className="border-t border-slate-200 bg-white py-4 px-4 shadow-lg animate-in fade-in duration-200">
             <form
@@ -408,100 +424,121 @@ export function PublicHeader({
           </div>
         )}
 
-        {/* Mobile Navigation Drawer */}
+        {/* Responsive Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="xl:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl animate-in fade-in slide-in-from-top-2">
-            <div className="grid grid-cols-2 gap-2 pt-2">
+          <div className="xl:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-8 space-y-3 shadow-2xl max-h-[85vh] overflow-y-auto animate-in fade-in slide-in-from-top-2">
+            {/* Mobile Sign-in & Language Switcher Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <Link
-                href="/team"
+                href="/account"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-300 text-xs font-bold text-slate-900"
               >
-                <span>FIRST TEAM</span>
+                <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
+                  <User className="w-3 h-3" />
+                </div>
+                <span>Sign in to Account</span>
               </Link>
-              <Link
-                href="/fixtures"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
+
+              <div
+                role="group"
+                aria-label="Mobile Language Switcher"
+                className="inline-flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-300 text-[10px] font-black"
               >
-                <span>MATCHES</span>
-              </Link>
-              <Link
-                href="/table"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>STANDINGS</span>
-              </Link>
-              <Link
-                href="/news"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>NEWS</span>
-              </Link>
-              <Link
-                href="/tickets"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-xs athletic-label tracking-wider text-club-primary font-bold transition flex items-center justify-between border border-red-200"
-              >
-                <span>TICKETS</span>
-              </Link>
-              <Link
-                href="/shop"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-xs athletic-label tracking-wider text-club-secondary font-bold transition flex items-center justify-between border border-blue-200"
-              >
-                <span>STORE</span>
-              </Link>
-              <Link
-                href="/supporters"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>SUPPORTERS</span>
-              </Link>
-              <Link
-                href="/club"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>HERITAGE</span>
-              </Link>
+                <button
+                  type="button"
+                  onClick={() => setLocale('en')}
+                  className={`px-2 py-0.5 rounded-full transition ${
+                    locale === 'en' ? 'bg-club-secondary text-white' : 'text-slate-600'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocale('sw')}
+                  className={`px-2 py-0.5 rounded-full transition ${
+                    locale === 'sw' ? 'bg-club-secondary text-white' : 'text-slate-600'
+                  }`}
+                >
+                  SW
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Nav Accordion Items */}
+            <div className="space-y-1">
+              {NAV_ITEMS.map((item) => {
+                const hasChildren = !!item.children && item.children.length > 0;
+                const isExpanded = mobileExpandedSection === item.key;
+
+                if (!hasChildren) {
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href || '#'}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-3 rounded-xl text-base font-semibold text-slate-800 hover:bg-slate-50 hover:text-club-primary transition"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <div key={item.key} className="rounded-xl border border-slate-100 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileExpandedSection(isExpanded ? null : item.key)
+                      }
+                      className="w-full px-4 py-3 bg-slate-50/70 hover:bg-slate-100/70 flex items-center justify-between text-base font-semibold text-slate-900 transition"
+                    >
+                      <span>{item.label}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          isExpanded ? 'rotate-180 text-club-primary' : 'text-slate-400'
+                        }`}
+                      />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="bg-white px-2 py-2 space-y-1 border-t border-slate-100">
+                        {item.children!.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-club-primary transition"
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile Sponsor Strip */}
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Principal Sponsor
+              </span>
               <Link
                 href="/partners"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
+                className="sponsor-badge-mozzart text-xs px-3 py-1 shadow-xs"
               >
-                <span>PARTNERS</span>
-              </Link>
-              <Link
-                href="/results"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>RESULTS</span>
-              </Link>
-              <Link
-                href="/videos"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs athletic-label tracking-wider text-slate-800 transition flex items-center justify-between border border-slate-200"
-              >
-                <span>3K TV / VIDEOS</span>
-              </Link>
-              <Link
-                href="/support-3k"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs athletic-label tracking-wider text-club-primary transition flex items-center justify-between"
-              >
-                <span>SUPPORT 3K</span>
+                MOZZART BET
               </Link>
             </div>
           </div>
         )}
       </header>
 
-      {/* Mobile Bottom Thumb-Friendly Bar */}
+      {/* Mobile Bottom Thumb-Friendly Navigation Bar */}
       <nav
         aria-label="Mobile Quick Navigation"
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-2 px-1 text-[10px] font-bold uppercase tracking-wider text-slate-600 shadow-lg"

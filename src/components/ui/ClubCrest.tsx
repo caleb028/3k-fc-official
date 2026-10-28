@@ -19,10 +19,10 @@ export function ClubCrest({
 }: ClubCrestProps) {
   const dimensions = {
     sm: 'w-9 h-9',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16 sm:w-20 sm:h-20',
-    xl: 'w-24 h-24 sm:w-28 sm:h-28',
-    '2xl': 'w-32 h-32',
+    md: 'w-10 h-10 md:w-12 md:h-12',
+    lg: 'w-12 h-12 md:w-14 md:h-14',
+    xl: 'w-16 h-16 md:w-20 md:h-20',
+    '2xl': 'w-24 h-24 sm:w-32 sm:h-32',
   }[size];
 
   const resolvedCrestUrl = crestUrl || '/images/3k-fc-crest.png';
