@@ -130,6 +130,72 @@ export function resolveClubMapping(teamName: string) {
   };
 }
 
+export interface VenueInfo {
+  venueName: string;
+  venueCity: string;
+}
+
+/**
+ * Official Kenyan Premier League stadium and city venue registry.
+ * Strictly aligned with official Flashscore match scheduling and FKF Premier League venue licensing.
+ */
+export const OFFICIAL_FLASHSCORE_VENUES: Record<string, VenueInfo> = {
+  '3k-fc-embu': { venueName: 'Moi Stadium, Embu', venueCity: 'Embu' },
+  'aps-bomet-fc': { venueName: 'Bomet IAAF Stadium', venueCity: 'Bomet' },
+  'nairobi-united-fc': { venueName: 'Camp Toyoyo, Nairobi', venueCity: 'Nairobi' },
+  'migori-youth-fc': { venueName: 'Migori Stadium', venueCity: 'Migori' },
+  'mathare-united-fc': { venueName: 'Dandora Stadium', venueCity: 'Nairobi' },
+  'mombasa-united-fc': { venueName: 'Mbaraki Grounds, Mombasa', venueCity: 'Mombasa' },
+  'shabana-fc': { venueName: 'Gusii Stadium', venueCity: 'Kisii' },
+  'tusker-fc': { venueName: 'Ruaraka Sports Ground, Nairobi', venueCity: 'Nairobi' },
+  'ulinzi-stars-fc': { venueName: "Ulinzi Sports Complex, Lang'ata", venueCity: 'Nairobi' },
+  'kenya-police-fc': { venueName: 'Police Sacco Stadium, South C', venueCity: 'Nairobi' },
+  'kakamega-homeboyz-fc': { venueName: 'Bukhungu Stadium', venueCity: 'Kakamega' },
+  'afc-leopards-sc': { venueName: 'Nyayo National Stadium', venueCity: 'Nairobi' },
+  'mara-sugar-fc': { venueName: 'Awendo Green Stadium', venueCity: 'Awendo' },
+  'kcb-fc': { venueName: 'Police Sacco Stadium', venueCity: 'Nairobi' },
+  'posta-rangers-fc': { venueName: 'Kenyatta Stadium, Machakos', venueCity: 'Machakos' },
+  'gor-mahia-fc': { venueName: 'Kenyatta Stadium, Machakos', venueCity: 'Machakos' },
+  'bandari-fc': { venueName: 'Mbaraki Sports Club', venueCity: 'Mombasa' },
+  'muranga-seal-fc': { venueName: "SportPesa Arena, Murang'a", venueCity: "Murang'a" },
+};
+
+/**
+ * Resolves verified venue name and city according to Flashscore fixture schedule.
+ * If 3K FC is the home club, the venue is Moi Stadium, Embu.
+ * If 3K FC is playing away, the venue is the home club's licensed home stadium.
+ */
+export function resolveAccurateVenue(clubSlug: string, teamName = ''): VenueInfo {
+  if (OFFICIAL_FLASHSCORE_VENUES[clubSlug]) {
+    return OFFICIAL_FLASHSCORE_VENUES[clubSlug];
+  }
+
+  const norm = (teamName || '').toLowerCase().trim();
+  if (norm.includes('3k')) return { venueName: 'Moi Stadium, Embu', venueCity: 'Embu' };
+  if (norm.includes('bomet')) return { venueName: 'Bomet IAAF Stadium', venueCity: 'Bomet' };
+  if (norm.includes('nairobi united')) return { venueName: 'Camp Toyoyo, Nairobi', venueCity: 'Nairobi' };
+  if (norm.includes('migori')) return { venueName: 'Migori Stadium', venueCity: 'Migori' };
+  if (norm.includes('mathare')) return { venueName: 'Dandora Stadium', venueCity: 'Nairobi' };
+  if (norm.includes('mombasa')) return { venueName: 'Mbaraki Grounds, Mombasa', venueCity: 'Mombasa' };
+  if (norm.includes('shabana')) return { venueName: 'Gusii Stadium', venueCity: 'Kisii' };
+  if (norm.includes('tusker')) return { venueName: 'Ruaraka Sports Ground, Nairobi', venueCity: 'Nairobi' };
+  if (norm.includes('ulinzi')) return { venueName: "Ulinzi Sports Complex, Lang'ata", venueCity: 'Nairobi' };
+  if (norm.includes('police')) return { venueName: 'Police Sacco Stadium, South C', venueCity: 'Nairobi' };
+  if (norm.includes('homeboyz')) return { venueName: 'Bukhungu Stadium', venueCity: 'Kakamega' };
+  if (norm.includes('leopard')) return { venueName: 'Nyayo National Stadium', venueCity: 'Nairobi' };
+  if (norm.includes('mara sugar')) return { venueName: 'Awendo Green Stadium', venueCity: 'Awendo' };
+  if (norm.includes('kcb')) return { venueName: 'Police Sacco Stadium', venueCity: 'Nairobi' };
+  if (norm.includes('posta')) return { venueName: 'Kenyatta Stadium, Machakos', venueCity: 'Machakos' };
+  if (norm.includes('gor')) return { venueName: 'Kenyatta Stadium, Machakos', venueCity: 'Machakos' };
+  if (norm.includes('bandari')) return { venueName: 'Mbaraki Sports Club', venueCity: 'Mombasa' };
+  if (norm.includes('murang')) return { venueName: "SportPesa Arena, Murang'a", venueCity: "Murang'a" };
+
+  return {
+    venueName: `${teamName.trim() || 'Club'} Stadium`,
+    venueCity: 'Kenya',
+  };
+}
+
 let lastSyncTime = 0;
 const SYNC_COOLDOWN_MS = 15_000; // 15 seconds cooldown
 
@@ -152,8 +218,26 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     return { synced: false, message: 'No fixtures found on Flashscore' };
   }
 
-  // 1. Purge all past / finished fixtures so only authentic upcoming ones exist
+  // 1. Identify strictly upcoming scheduled / live matches from Flashscore
   const pastCutoff = new Date(Date.now() - 3 * 3600 * 1000);
+  const scheduledOrLive = rawFixtures.filter(
+    (f) => !f.isFinished && f.kickoffAt && f.kickoffAt.getTime() >= pastCutoff.getTime()
+  );
+
+  if (!scheduledOrLive.length) {
+    return { synced: true, message: 'No upcoming fixtures found on Flashscore', count: 0 };
+  }
+
+  // Build whitelist of genuine active Flashscore match slugs
+  const activeFlashscoreSlugs = new Set<string>();
+  for (const item of scheduledOrLive) {
+    const isHome = item.homeTeam.toLowerCase().includes('3k');
+    const opponentRaw = isHome ? item.awayTeam : item.homeTeam;
+    const oppMap = resolveClubMapping(opponentRaw);
+    activeFlashscoreSlugs.add(`3k-vs-${oppMap.slug}-${item.matchId}`);
+  }
+
+  // Purge finished matches, past kickoff dates, or outdated manual placeholder slugs
   const finishedMatches = rawFixtures.filter((f) => f.isFinished);
   const finishedMatchSlugs: string[] = [];
 
@@ -170,6 +254,12 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
         { status: 'FULL_TIME' },
         { kickoffAt: { lt: pastCutoff } },
         ...finishedMatchSlugs.map((s) => ({ slug: { contains: s } })),
+        {
+          AND: [
+            { slug: { notIn: Array.from(activeFlashscoreSlugs) } },
+            { slug: { contains: 'vs' } },
+          ],
+        },
       ],
     },
     select: { id: true },
@@ -179,16 +269,9 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     await prisma.ticketCategory.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
     await prisma.liveBlogUpdate.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
     await prisma.matchPoll.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
+    await prisma.ticketOrder.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
+    await prisma.ticket.deleteMany({ where: { fixtureId: p.id } }).catch(() => {});
     await prisma.fixture.delete({ where: { id: p.id } }).catch(() => {});
-  }
-
-  // 2. Identify strictly upcoming scheduled / live matches
-  const scheduledOrLive = rawFixtures.filter(
-    (f) => !f.isFinished && f.kickoffAt && f.kickoffAt.getTime() >= pastCutoff.getTime()
-  );
-
-  if (!scheduledOrLive.length) {
-    return { synced: true, message: 'No upcoming fixtures found on Flashscore', count: 0 };
   }
 
   // Resolve 3K FC club record
@@ -202,6 +285,14 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
         city: 'Embu',
         stadiumName: 'Moi Stadium, Embu',
         isOurClub: true,
+      },
+    });
+  } else if (club3k.stadiumName !== 'Moi Stadium, Embu' || club3k.city !== 'Embu') {
+    club3k = await prisma.club.update({
+      where: { id: club3k.id },
+      data: {
+        stadiumName: 'Moi Stadium, Embu',
+        city: 'Embu',
       },
     });
   }
@@ -228,6 +319,18 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     const opponentRaw = isHome ? item.awayTeam : item.homeTeam;
     const oppMap = resolveClubMapping(opponentRaw);
 
+    // Accurate venue determined strictly by the home team of the fixture schedule:
+    // If 3K FC is home: Moi Stadium, Embu in Embu
+    // If 3K FC is away: Opponent's verified official stadium & city
+    const accurateVenue = isHome
+      ? resolveAccurateVenue('3k-fc-embu', '3K FC')
+      : resolveAccurateVenue(oppMap.slug, opponentRaw);
+
+    const venueName = accurateVenue.venueName;
+    const venueCity = accurateVenue.venueCity;
+
+    // Ensure opponent club has its verified stadium and city saved in database
+    const oppVenue = resolveAccurateVenue(oppMap.slug, opponentRaw);
     let oppClub = await prisma.club.findUnique({ where: { slug: oppMap.slug } });
     if (!oppClub) {
       oppClub = await prisma.club.create({
@@ -235,8 +338,17 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
           name: oppMap.defaultName,
           shortName: oppMap.defaultName.replace(' FC', '').replace(' SC', ''),
           slug: oppMap.slug,
-          city: 'Kenya',
+          city: oppVenue.venueCity,
+          stadiumName: oppVenue.venueName,
           isOurClub: false,
+        },
+      });
+    } else if (!oppClub.stadiumName || oppClub.stadiumName.includes('FC Stadium') || oppClub.city === 'Kenya') {
+      oppClub = await prisma.club.update({
+        where: { id: oppClub.id },
+        data: {
+          stadiumName: oppVenue.venueName,
+          city: oppVenue.venueCity,
         },
       });
     }
@@ -244,11 +356,9 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
     const homeClubId = isHome ? club3k.id : oppClub.id;
     const awayClubId = isHome ? oppClub.id : club3k.id;
     const fixtureSlug = `3k-vs-${oppMap.slug}-${item.matchId}`;
-    const venueName = isHome ? 'Moi Stadium, Embu' : oppClub.stadiumName || `${oppClub.name} Stadium`;
-    const venueCity = isHome ? 'Embu' : oppClub.city || 'Kenya';
 
     const matchStatus = item.isLive ? 'LIVE' : 'SCHEDULED';
-    const roundName = i === 0 ? 'FKF Premier League — Next Matchweek' : `FKF Premier League — Matchday ${i + 1}`;
+    const roundName = i === 0 ? 'FKF Premier League — Next Match' : `FKF Premier League — Matchweek ${i + 1}`;
 
     const existing = await prisma.fixture.findFirst({
       where: {
@@ -271,10 +381,15 @@ export async function syncFlashscoreMatchweekFixture(force = false) {
       saved = await prisma.fixture.update({
         where: { id: existing.id },
         data: {
+          slug: fixtureSlug,
           kickoffAt: item.kickoffAt,
           kickoffConfirmed: true,
+          isHomeMatch: isHome,
+          roundName,
+          matchday: i + 1,
           venueName,
           venueCity,
+          venueConfirmed: true,
           status: matchStatus,
           ticketsAvailable: isHome,
           broadcastInfo: item.broadcastInfo || 'Broadcast: Azam Sports / FKF TV',

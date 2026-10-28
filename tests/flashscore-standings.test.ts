@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { parseFlashscoreStandingsFeed, resolveClubMapping } from '../src/lib/flashscore';
+import {
+  parseFlashscoreStandingsFeed,
+  resolveClubMapping,
+  resolveAccurateVenue,
+} from '../src/lib/flashscore';
 
 describe('Flashscore Standings Feed Ingestion', () => {
   const sampleFeed = `
@@ -54,5 +58,37 @@ describe('Flashscore Standings Feed Ingestion', () => {
     expect(resolveClubMapping('Tusker').slug).toBe('tusker-fc');
     expect(resolveClubMapping('Mathare Utd.').slug).toBe('mathare-united-fc');
     expect(resolveClubMapping('Police FC').slug).toBe('kenya-police-fc');
+  });
+
+  it('resolves accurate match venues and cities for home and away fixtures', () => {
+    // 3K FC Home venue
+    const homeVenue = resolveAccurateVenue('3k-fc-embu', '3K FC');
+    expect(homeVenue.venueName).toBe('Moi Stadium, Embu');
+    expect(homeVenue.venueCity).toBe('Embu');
+
+    // Away match at APS Bomet
+    const bometVenue = resolveAccurateVenue('aps-bomet-fc', 'APS Bomet');
+    expect(bometVenue.venueName).toBe('Bomet IAAF Stadium');
+    expect(bometVenue.venueCity).toBe('Bomet');
+
+    // Away match at Migori Youth
+    const migoriVenue = resolveAccurateVenue('migori-youth-fc', 'Migori');
+    expect(migoriVenue.venueName).toBe('Migori Stadium');
+    expect(migoriVenue.venueCity).toBe('Migori');
+
+    // Away match at Tusker
+    const tuskerVenue = resolveAccurateVenue('tusker-fc', 'Tusker');
+    expect(tuskerVenue.venueName).toBe('Ruaraka Sports Ground, Nairobi');
+    expect(tuskerVenue.venueCity).toBe('Nairobi');
+
+    // Away match at AFC Leopards
+    const leopardsVenue = resolveAccurateVenue('afc-leopards-sc', 'Leopards');
+    expect(leopardsVenue.venueName).toBe('Nyayo National Stadium');
+    expect(leopardsVenue.venueCity).toBe('Nairobi');
+
+    // Away match at Muranga Seal
+    const murangaVenue = resolveAccurateVenue('muranga-seal-fc', 'Muranga');
+    expect(murangaVenue.venueName).toBe("SportPesa Arena, Murang'a");
+    expect(murangaVenue.venueCity).toBe("Murang'a");
   });
 });
