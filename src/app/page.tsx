@@ -29,13 +29,6 @@ export default async function HomePage() {
   const cookieStore = await cookies();
   const locale: Locale = cookieStore.get('3kfc_locale')?.value === 'sw' ? 'sw' : 'en';
 
-  // Automatically sync fixtures & table standings from Flashscore and team news from Facebook
-  await Promise.all([
-    syncFlashscoreMatchweekFixture().catch(() => null),
-    syncFlashscoreStandings().catch(() => null),
-    syncFacebookTeamNews().catch(() => null),
-  ]);
-
   const [
     settings,
     nextOrLiveFixture,
@@ -129,20 +122,20 @@ export default async function HomePage() {
     ? {
         id: nextOrLiveFixture.id,
         slug: nextOrLiveFixture.slug,
-        competitionName: nextOrLiveFixture.competition.name,
+        competitionName: nextOrLiveFixture.competition?.name || 'FKF Premier League',
         roundName: nextOrLiveFixture.roundName,
         kickoffAt: nextOrLiveFixture.kickoffAt.toISOString(),
         kickoffConfirmed: nextOrLiveFixture.kickoffConfirmed,
-        venueName: nextOrLiveFixture.venueName,
+        venueName: nextOrLiveFixture.venueName || 'Moi Stadium, Embu',
         venueConfirmed: nextOrLiveFixture.venueConfirmed,
         status: nextOrLiveFixture.status,
         liveMinute: nextOrLiveFixture.liveMinute,
-        homeClubName: nextOrLiveFixture.homeClub.name,
-        homeClubShort: nextOrLiveFixture.homeClub.shortName,
-        homeClubIsOur: nextOrLiveFixture.homeClub.isOurClub,
-        awayClubName: nextOrLiveFixture.awayClub.name,
-        awayClubShort: nextOrLiveFixture.awayClub.shortName,
-        awayClubIsOur: nextOrLiveFixture.awayClub.isOurClub,
+        homeClubName: nextOrLiveFixture.homeClub?.name || '3K FC',
+        homeClubShort: nextOrLiveFixture.homeClub?.shortName || '3K',
+        homeClubIsOur: nextOrLiveFixture.homeClub?.isOurClub ?? true,
+        awayClubName: nextOrLiveFixture.awayClub?.name || 'Opponent',
+        awayClubShort: nextOrLiveFixture.awayClub?.shortName || 'OPP',
+        awayClubIsOur: nextOrLiveFixture.awayClub?.isOurClub ?? false,
         homeScore: nextOrLiveFixture.homeScore,
         awayScore: nextOrLiveFixture.awayScore,
         ticketsAvailable: nextOrLiveFixture.ticketsAvailable,
@@ -167,8 +160,8 @@ export default async function HomePage() {
                 <AuthenticMediaPlaceholder
                   category={
                     locale === 'sw'
-                      ? primaryHero.category.nameSw
-                      : primaryHero.category.nameEn
+                      ? primaryHero.category?.nameSw || 'Habari'
+                      : primaryHero.category?.nameEn || 'News'
                   }
                   label={
                     resolveBilingualField(primaryHero.translations, locale).record?.headline ||
@@ -185,8 +178,8 @@ export default async function HomePage() {
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-0.5 rounded-full text-[9px] athletic-label font-extrabold bg-club-primary text-white tracking-wider shadow-xs">
                       {locale === 'sw'
-                        ? primaryHero.category.nameSw
-                        : primaryHero.category.nameEn}
+                        ? primaryHero.category?.nameSw || 'Habari'
+                        : primaryHero.category?.nameEn || 'News'}
                     </span>
                     <span className="text-[10px] text-slate-300 font-medium">
                       {primaryHero.publishedAt
@@ -227,8 +220,8 @@ export default async function HomePage() {
                     <AuthenticMediaPlaceholder
                       category={
                         locale === 'sw'
-                          ? primaryHero.category.nameSw
-                          : primaryHero.category.nameEn
+                          ? primaryHero.category?.nameSw || 'Habari'
+                          : primaryHero.category?.nameEn || 'News'
                       }
                       label={
                         resolveBilingualField(primaryHero.translations, locale).record?.headline ||
@@ -247,8 +240,8 @@ export default async function HomePage() {
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-1 rounded-full text-[10px] athletic-label tracking-wider font-extrabold bg-red-50 text-club-primary border border-red-200">
                       {locale === 'sw'
-                        ? primaryHero.category.nameSw
-                        : primaryHero.category.nameEn}
+                        ? primaryHero.category?.nameSw || 'Habari'
+                        : primaryHero.category?.nameEn || 'News'}
                     </span>
                     <span className="text-xs text-slate-400 font-medium">
                       {primaryHero.publishedAt
@@ -341,7 +334,7 @@ export default async function HomePage() {
                       {/* Competition & Date Pill */}
                       <div className="flex items-center justify-between text-[11px] mb-3 pb-2 border-b border-slate-100">
                         <span className="athletic-label text-[10px] font-extrabold text-club-secondary truncate max-w-[150px]">
-                          {fix.competition.name}
+                          {fix.competition?.name || 'FKF Premier League'}
                         </span>
                         <span className="text-[10px] font-mono font-bold text-slate-500">
                           {matchDate}
@@ -352,15 +345,15 @@ export default async function HomePage() {
                       <div className="flex items-center justify-between py-2">
                         {/* Home Team */}
                         <div className="flex flex-col items-center gap-1 text-center flex-1 min-w-0">
-                          {fix.homeClub.isOurClub ? (
+                          {fix.homeClub?.isOurClub ? (
                             <ClubCrest size="sm" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700">
-                              {fix.homeClub.shortName.slice(0, 3).toUpperCase()}
+                              {(fix.homeClub?.shortName || fix.homeClub?.name || '3K').slice(0, 3).toUpperCase()}
                             </div>
                           )}
-                          <span className={`text-[11px] font-bold truncate max-w-[85px] ${fix.homeClub.isOurClub ? 'text-club-primary font-black' : 'text-slate-800'}`}>
-                            {fix.homeClub.shortName || fix.homeClub.name}
+                          <span className={`text-[11px] font-bold truncate max-w-[85px] ${fix.homeClub?.isOurClub ? 'text-club-primary font-black' : 'text-slate-800'}`}>
+                            {fix.homeClub?.shortName || fix.homeClub?.name || '3K FC'}
                           </span>
                         </div>
 
@@ -374,15 +367,15 @@ export default async function HomePage() {
 
                         {/* Away Team */}
                         <div className="flex flex-col items-center gap-1 text-center flex-1 min-w-0">
-                          {fix.awayClub.isOurClub ? (
+                          {fix.awayClub?.isOurClub ? (
                             <ClubCrest size="sm" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700">
-                              {fix.awayClub.shortName.slice(0, 3).toUpperCase()}
+                              {(fix.awayClub?.shortName || fix.awayClub?.name || 'OPP').slice(0, 3).toUpperCase()}
                             </div>
                           )}
-                          <span className={`text-[11px] font-bold truncate max-w-[85px] ${fix.awayClub.isOurClub ? 'text-club-primary font-black' : 'text-slate-800'}`}>
-                            {fix.awayClub.shortName || fix.awayClub.name}
+                          <span className={`text-[11px] font-bold truncate max-w-[85px] ${fix.awayClub?.isOurClub ? 'text-club-primary font-black' : 'text-slate-800'}`}>
+                            {fix.awayClub?.shortName || fix.awayClub?.name || 'Opponent'}
                           </span>
                         </div>
                       </div>
@@ -390,7 +383,7 @@ export default async function HomePage() {
                       {/* Verified Stadium Venue */}
                       <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1 text-[10px] text-slate-500 truncate">
                         <MapPin className="w-3 h-3 text-club-primary shrink-0" />
-                        <span className="truncate">{fix.venueName}</span>
+                        <span className="truncate">{fix.venueName || 'Moi Stadium, Embu'}</span>
                       </div>
                     </div>
 
@@ -456,7 +449,7 @@ export default async function HomePage() {
                   >
                     <div>
                       <AuthenticMediaPlaceholder
-                        category={locale === 'sw' ? art.category.nameSw : art.category.nameEn}
+                        category={locale === 'sw' ? art.category?.nameSw || 'Habari' : art.category?.nameEn || 'News'}
                         label={tr?.headline || art.slug}
                         sublabel={art.featuredImageAlt}
                         aspectRatio="video"
@@ -466,7 +459,7 @@ export default async function HomePage() {
                       <div className="p-4">
                         <div className="flex items-center justify-between text-[11px] mb-2">
                           <span className="athletic-label text-[10px] font-bold text-club-primary uppercase">
-                            {locale === 'sw' ? art.category.nameSw : art.category.nameEn}
+                            {locale === 'sw' ? art.category?.nameSw || 'Habari' : art.category?.nameEn || 'News'}
                           </span>
                           <span className="text-slate-400 font-mono text-[10px]">
                             {art.publishedAt

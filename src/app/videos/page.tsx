@@ -13,9 +13,6 @@ export default async function VideosPage({
   const params = await searchParams;
   const selectedCat = (params.category || 'ALL').toUpperCase();
 
-  // Automatically sync newly uploaded photos & videos from official club channels
-  await syncFacebookTeamNews().catch(() => null);
-
   const categories = [
     'ALL',
     'HIGHLIGHTS',

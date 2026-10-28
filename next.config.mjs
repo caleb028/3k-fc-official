@@ -13,7 +13,7 @@ const nextConfig = {
     ],
   },
   outputFileTracingIncludes: {
-    '/**': ['./prisma/seed.db'],
+    '/**': ['./prisma/seed.db', './prisma/dev.db'],
   },
   async redirects() {
     return [

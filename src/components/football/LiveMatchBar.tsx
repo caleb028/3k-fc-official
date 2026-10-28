@@ -105,7 +105,9 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
 
             <div className="flex items-center gap-1 text-slate-500 text-[10px] truncate shrink-0">
               <MapPin className="w-3 h-3 text-club-primary shrink-0" />
-              <span className="truncate max-w-[140px]">{fixture.venueName.split(',')[0]}</span>
+              <span className="truncate max-w-[140px]">
+                {(fixture.venueName || 'Moi Stadium, Embu').split(',')[0]}
+              </span>
             </div>
           </div>
 
@@ -117,11 +119,11 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
                 <ClubCrest size="sm" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-white border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700 shadow-xs">
-                  {fixture.homeClubShort.slice(0, 3).toUpperCase()}
+                  {(fixture.homeClubShort || '3K').slice(0, 3).toUpperCase()}
                 </div>
               )}
               <span className={`text-xs font-bold truncate max-w-[95px] ${fixture.homeClubIsOur ? 'text-club-primary' : 'text-slate-800'}`}>
-                {fixture.homeClubName}
+                {fixture.homeClubName || '3K FC'}
               </span>
             </div>
 
@@ -142,7 +144,7 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
                     </span>
                   ) : (
                     <span className="text-[9px] text-slate-400 font-medium mt-0.5">
-                      {formattedDate.split(',')[0]}
+                      {(formattedDate || '').split(',')[0] || 'Matchday'}
                     </span>
                   )}
                 </div>
@@ -155,11 +157,11 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
                 <ClubCrest size="sm" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-white border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700 shadow-xs">
-                  {fixture.awayClubShort.slice(0, 3).toUpperCase()}
+                  {(fixture.awayClubShort || 'OPP').slice(0, 3).toUpperCase()}
                 </div>
               )}
               <span className={`text-xs font-bold truncate max-w-[95px] ${fixture.awayClubIsOur ? 'text-club-primary' : 'text-slate-800'}`}>
-                {fixture.awayClubName}
+                {fixture.awayClubName || 'Opponent'}
               </span>
             </div>
           </div>
@@ -208,7 +210,7 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
             <span className="text-slate-300">•</span>
             <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
               <MapPin className="w-3 h-3 text-club-primary" />
-              <span>{fixture.venueName}</span>
+              <span>{fixture.venueName || 'Moi Stadium, Embu'}</span>
             </span>
           </div>
 
@@ -220,11 +222,11 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
                 <ClubCrest size="sm" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700">
-                  {fixture.homeClubShort.slice(0, 3).toUpperCase()}
+                  {(fixture.homeClubShort || '3K').slice(0, 3).toUpperCase()}
                 </div>
               )}
               <span className={`editorial-headline text-base md:text-lg ${fixture.homeClubIsOur ? 'text-club-primary font-black' : 'text-slate-700'}`}>
-                {fixture.homeClubName}
+                {fixture.homeClubName || '3K FC'}
               </span>
             </div>
 
@@ -249,13 +251,13 @@ export function LiveMatchBar({ fixture }: { fixture: MatchBarFixtureData | null 
             {/* Away Team */}
             <div className="flex items-center gap-3">
               <span className={`editorial-headline text-base md:text-lg ${fixture.awayClubIsOur ? 'text-club-primary font-black' : 'text-slate-700'}`}>
-                {fixture.awayClubName}
+                {fixture.awayClubName || 'Opponent'}
               </span>
               {fixture.awayClubIsOur ? (
                 <ClubCrest size="sm" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[10px] font-black text-slate-700">
-                  {fixture.awayClubShort.slice(0, 3).toUpperCase()}
+                  {(fixture.awayClubShort || 'OPP').slice(0, 3).toUpperCase()}
                 </div>
               )}
             </div>

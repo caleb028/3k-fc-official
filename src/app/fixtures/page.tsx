@@ -26,9 +26,6 @@ export default async function FixturesPage({
   const selectedCompetition = params.competition || 'all';
   const selectedVenue = params.venue || 'all';
 
-  // Automatically fetch fresh single matchweek fixture from Flashscore and remove finished fixtures
-  await syncFlashscoreMatchweekFixture().catch(() => null);
-
   const [competitions, seasons, fixtures] = await Promise.all([
     prisma.competition.findMany({ orderBy: { tier: 'asc' } }),
     prisma.season.findMany({ orderBy: { startDate: 'desc' } }),
