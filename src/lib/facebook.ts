@@ -398,12 +398,20 @@ export async function syncFacebookTeamNews(): Promise<{
           const resolvedStatus = existing.status === 'ARCHIVED' ? 'ARCHIVED' : 'PUBLISHED';
           const resolvedFeatured = existing.status === 'ARCHIVED' ? false : existing.isFeatured;
 
+          // CRITICAL: Preserve custom/uploaded photos! NEVER overwrite an existing image
+          // if an admin has uploaded or customized it (or if it is not marked as a placeholder).
+          const hasCustomImage = Boolean(existing.featuredImageUrl && !existing.isPlaceholderImage);
+          const resolvedImageUrl = hasCustomImage ? existing.featuredImageUrl : post.featuredImageUrl;
+          const resolvedImageAlt = hasCustomImage
+            ? existing.featuredImageAlt
+            : (post.featuredImageAlt || post.headlineEn);
+
           await prisma.article.update({
             where: { id: existing.id },
             data: {
-              authorName: '3K FC Media Desk',
-              featuredImageUrl: post.featuredImageUrl,
-              featuredImageAlt: post.featuredImageAlt || post.headlineEn,
+              authorName: existing.authorName || '3K FC Media Desk',
+              featuredImageUrl: resolvedImageUrl,
+              featuredImageAlt: resolvedImageAlt,
               isPlaceholderImage: false,
               videoEmbedUrl: null,
               status: resolvedStatus,
@@ -412,49 +420,35 @@ export async function syncFacebookTeamNews(): Promise<{
             },
           });
 
-          await prisma.articleTranslation.upsert({
-            where: {
-              articleId_locale: {
+          // Only seed translations if missing; NEVER overwrite editorial edits made by admin
+          const hasEn = existing.translations.some((t) => t.locale === 'en');
+          const hasSw = existing.translations.some((t) => t.locale === 'sw');
+
+          if (!hasEn) {
+            await prisma.articleTranslation.create({
+              data: {
                 articleId: existing.id,
                 locale: 'en',
+                headline: post.headlineEn,
+                summary: post.summaryEn,
+                body: post.bodyEn,
+                isComplete: true,
               },
-            },
-            update: {
-              headline: post.headlineEn,
-              summary: post.summaryEn,
-              body: post.bodyEn,
-            },
-            create: {
-              articleId: existing.id,
-              locale: 'en',
-              headline: post.headlineEn,
-              summary: post.summaryEn,
-              body: post.bodyEn,
-              isComplete: true,
-            },
-          });
+            });
+          }
 
-          await prisma.articleTranslation.upsert({
-            where: {
-              articleId_locale: {
+          if (!hasSw) {
+            await prisma.articleTranslation.create({
+              data: {
                 articleId: existing.id,
                 locale: 'sw',
+                headline: post.headlineSw,
+                summary: post.summarySw,
+                body: post.bodySw,
+                isComplete: true,
               },
-            },
-            update: {
-              headline: post.headlineSw,
-              summary: post.summarySw,
-              body: post.bodySw,
-            },
-            create: {
-              articleId: existing.id,
-              locale: 'sw',
-              headline: post.headlineSw,
-              summary: post.summarySw,
-              body: post.bodySw,
-              isComplete: true,
-            },
-          });
+            });
+          }
 
           syncedArticles++;
         }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -65,6 +66,11 @@ export async function POST(req: NextRequest) {
         after: updatedVariant,
         reason: `${parsed.data.reason} (Delta: ${parsed.data.delta > 0 ? `+${parsed.data.delta}` : parsed.data.delta}) by ${admin.email}`,
       });
+
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+      revalidatePath('/shop');
+      revalidatePath('/admin/merchandise');
 
       return NextResponse.json({ success: true, variant: updatedVariant });
     }

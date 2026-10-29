@@ -1,9 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Users, UserPlus, CheckCircle2, AlertCircle, Edit, Star, Shield, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Users,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+  Edit,
+  Trash2,
+  Star,
+  Shield,
+  ShieldCheck,
+  Camera,
+  UploadCloud,
+  Image as ImageIcon,
+  Check,
+  User,
+} from 'lucide-react';
+import { compressImage } from '@/lib/image-compress';
 
-interface PlayerItem {
+export interface PlayerItem {
   id: string;
   slug: string;
   firstName: string;
@@ -19,10 +36,11 @@ interface PlayerItem {
   isCaptain: boolean;
   isSpotlight: boolean;
   isActive: boolean;
+  photoUrl: string | null;
   photoVerified: boolean;
 }
 
-interface StaffItem {
+export interface StaffItem {
   id: string;
   slug: string;
   fullName: string;
@@ -32,7 +50,17 @@ interface StaffItem {
   biographyEn: string;
   sortOrder: number;
   isActive: boolean;
+  photoUrl: string | null;
+  photoVerified: boolean;
 }
+
+const STOCK_PLAYER_PHOTOS = [
+  { label: 'Match Action Derby', url: '/images/facebook/3kfc-facebook-derby-match-action.jpg' },
+  { label: 'Coach Omasete Headshot', url: '/images/facebook/3kfc-facebook-coach-nicodemus-omasete.jpg' },
+  { label: 'TOTW Kariuki & Wanjala', url: '/images/facebook/3kfc-facebook-totw-kariuki-wanjala.jpg' },
+  { label: 'Player on Moi Pitch', url: '/images/3k-fc-player-pitch.jpg' },
+  { label: 'Team Celebration', url: '/images/3k-fc-team-celebration.png' },
+];
 
 export function SquadAdminClient({
   initialPlayers,
@@ -41,11 +69,21 @@ export function SquadAdminClient({
   initialPlayers: PlayerItem[];
   initialStaff: StaffItem[];
 }) {
+  const router = useRouter();
+  const [players, setPlayers] = useState<PlayerItem[]>(initialPlayers);
+  const [staff, setStaff] = useState<StaffItem[]>(initialStaff);
   const [activeTab, setActiveTab] = useState<'PLAYERS' | 'STAFF'>('PLAYERS');
   const [editingPlayer, setEditingPlayer] = useState<Partial<PlayerItem> | null>(null);
   const [editingStaff, setEditingStaff] = useState<Partial<StaffItem> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
+
+  // Photo upload states
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+  const [photoInfo, setPhotoInfo] = useState<{ name: string; sizeKb: number } | null>(null);
+  const playerFileInputRef = useRef<HTMLInputElement | null>(null);
+  const staffFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const openNewPlayer = () => {
     setEditingPlayer({
@@ -58,14 +96,32 @@ export function SquadAdminClient({
       position: 'MIDFIELDER',
       specificRole: 'Attacking Midfielder',
       nationality: 'Kenyan',
-      biographyEn: '',
-      biographySw: '',
+      biographyEn: 'Talented first-team squad player competing for 3K FC in the FKF Premier League.',
+      biographySw: 'Mchezaji wa kikosi cha kwanza cha 3K FC katika Ligi Kuu ya FKF.',
       isCaptain: false,
       isSpotlight: false,
       isActive: true,
-      photoVerified: false,
+      photoUrl: '/images/facebook/3kfc-facebook-derby-match-action.jpg',
+      photoVerified: true,
     });
+    setPhotoInfo(null);
     setMessage(null);
+  };
+
+  const handleDevicePlayerPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingPlayer) return;
+    setIsCompressingPhoto(true);
+    try {
+      const { dataUrl, sizeKb } = await compressImage(file, 600, 600, 0.85);
+      setEditingPlayer((prev) => (prev ? { ...prev, photoUrl: dataUrl, photoVerified: true } : null));
+      setPhotoInfo({ name: file.name, sizeKb });
+    } catch (err) {
+      console.error('Player photo upload error:', err);
+      alert('Could not read photo from device.');
+    } finally {
+      setIsCompressingPhoto(false);
+    }
   };
 
   const handleSavePlayer = async (e: React.FormEvent) => {
@@ -90,12 +146,41 @@ export function SquadAdminClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save player');
 
-      setMessage({ text: 'Player profile saved and verified.', success: true });
+      const saved: PlayerItem = data.player;
+      if (editingPlayer.id) {
+        setPlayers((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+      } else {
+        setPlayers((prev) => [...prev, saved]);
+      }
+
+      setMessage({ text: `Player ${saved.fullName} saved and published live.`, success: true });
       setEditingPlayer(null);
+      router.refresh();
     } catch (err: any) {
       setMessage({ text: err.message, success: false });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeletePlayer = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove player "${name}"?`)) return;
+    setDeletingId(id);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/squad?id=${id}&entityType=PLAYER`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete player');
+
+      setPlayers((prev) => prev.filter((p) => p.id !== id));
+      setMessage({ text: `Player "${name}" successfully removed.`, success: true });
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ text: err.message, success: false });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -104,13 +189,32 @@ export function SquadAdminClient({
       slug: '',
       fullName: '',
       roleTitleEn: 'Assistant Coach',
-      roleTitleSw: '',
+      roleTitleSw: 'Kocha Msaidizi',
       category: 'TECHNICAL_BENCH',
-      biographyEn: '',
+      biographyEn: 'Key technical bench member steering tactical match performance.',
       sortOrder: 10,
       isActive: true,
+      photoUrl: '/images/facebook/3kfc-facebook-coach-nicodemus-omasete.jpg',
+      photoVerified: true,
     });
+    setPhotoInfo(null);
     setMessage(null);
+  };
+
+  const handleDeviceStaffPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingStaff) return;
+    setIsCompressingPhoto(true);
+    try {
+      const { dataUrl, sizeKb } = await compressImage(file, 600, 600, 0.85);
+      setEditingStaff((prev) => (prev ? { ...prev, photoUrl: dataUrl, photoVerified: true } : null));
+      setPhotoInfo({ name: file.name, sizeKb });
+    } catch (err) {
+      console.error('Staff photo upload error:', err);
+      alert('Could not read photo from device.');
+    } finally {
+      setIsCompressingPhoto(false);
+    }
   };
 
   const handleSaveStaff = async (e: React.FormEvent) => {
@@ -135,12 +239,41 @@ export function SquadAdminClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save staff member');
 
-      setMessage({ text: 'Staff member profile saved.', success: true });
+      const saved: StaffItem = data.staff;
+      if (editingStaff.id) {
+        setStaff((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
+      } else {
+        setStaff((prev) => [...prev, saved]);
+      }
+
+      setMessage({ text: `Staff member ${saved.fullName} saved and published live.`, success: true });
       setEditingStaff(null);
+      router.refresh();
     } catch (err: any) {
       setMessage({ text: err.message, success: false });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove staff member "${name}"?`)) return;
+    setDeletingId(id);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/squad?id=${id}&entityType=STAFF`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete staff member');
+
+      setStaff((prev) => prev.filter((s) => s.id !== id));
+      setMessage({ text: `Staff member "${name}" successfully removed.`, success: true });
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ text: err.message, success: false });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -174,7 +307,7 @@ export function SquadAdminClient({
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
-            First Team Squad ({initialPlayers.length})
+            First Team Squad ({players.length})
           </button>
           <button
             onClick={() => {
@@ -188,7 +321,7 @@ export function SquadAdminClient({
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
-            Technical Bench &amp; Staff ({initialStaff.length})
+            Technical Bench &amp; Staff ({staff.length})
           </button>
         </div>
 
@@ -196,18 +329,18 @@ export function SquadAdminClient({
           {activeTab === 'PLAYERS' ? (
             <button
               onClick={openNewPlayer}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Register Player</span>
+              <span>Add Player</span>
             </button>
           ) : (
             <button
               onClick={openNewStaff}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Add Staff Member</span>
+              <span>Add Staff</span>
             </button>
           )}
         </div>
@@ -215,17 +348,120 @@ export function SquadAdminClient({
 
       {/* Modal / Form Drawer for Player */}
       {editingPlayer && (
-        <div className="bg-[#121722] p-6 rounded-2xl border border-club-primary/40 shadow-xl space-y-4">
+        <div className="bg-[#121722] p-6 rounded-2xl border border-club-primary/40 shadow-xl space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
-            <h2 className="text-base font-bold text-white">
-              {editingPlayer.id ? `Edit Player: ${editingPlayer.fullName}` : 'Register New Player'}
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <User className="w-4 h-4 text-club-accent" />
+              <span>{editingPlayer.id ? `Edit Player: ${editingPlayer.fullName}` : 'Register New Player'}</span>
             </h2>
-            <button onClick={() => setEditingPlayer(null)} className="text-slate-400 hover:text-white text-xs">
+            <button
+              onClick={() => setEditingPlayer(null)}
+              className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-white/5"
+            >
               Close
             </button>
           </div>
 
-          <form onSubmit={handleSavePlayer} className="space-y-4 text-xs">
+          <form onSubmit={handleSavePlayer} className="space-y-6 text-xs">
+            {/* Player Photo Section */}
+            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
+              <label className="text-white font-bold block">Player Headshot / Action Photo</label>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* Avatar Preview */}
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-800 border-2 border-white/15 shrink-0 flex items-center justify-center relative">
+                  {editingPlayer.photoUrl ? (
+                    <img
+                      src={editingPlayer.photoUrl}
+                      alt={editingPlayer.fullName || 'Player photo'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-slate-500 text-xs font-mono">No Photo</div>
+                  )}
+                  {editingPlayer.photoVerified && (
+                    <span className="absolute bottom-1 right-1 bg-emerald-500 text-white p-0.5 rounded-full" title="Verified Photo">
+                      <Check className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Upload & Controls */}
+                <div className="space-y-2 flex-1 w-full">
+                  <input
+                    ref={playerFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDevicePlayerPhoto}
+                    className="hidden"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isCompressingPhoto}
+                      onClick={() => playerFileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg bg-club-primary hover:bg-red-600 text-white text-xs font-bold flex items-center gap-1.5 transition"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{isCompressingPhoto ? 'Processing...' : 'Upload from Device'}</span>
+                    </button>
+                    {photoInfo && (
+                      <span className="text-[11px] text-emerald-400">
+                        {photoInfo.name} ({photoInfo.sizeKb} KB)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Stock Quick Select */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {STOCK_PLAYER_PHOTOS.map((stk) => (
+                      <button
+                        key={stk.url}
+                        type="button"
+                        onClick={() =>
+                          setEditingPlayer((prev) =>
+                            prev ? { ...prev, photoUrl: stk.url, photoVerified: true } : null
+                          )
+                        }
+                        className={`px-2 py-1 rounded text-[10px] font-semibold border transition ${
+                          editingPlayer.photoUrl === stk.url
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-white/5 text-slate-300 border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {stk.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Direct URL */}
+                  <input
+                    type="text"
+                    placeholder="Or enter direct photo URL..."
+                    value={editingPlayer.photoUrl ?? ''}
+                    onChange={(e) =>
+                      setEditingPlayer((prev) => (prev ? { ...prev, photoUrl: e.target.value } : null))
+                    }
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={editingPlayer.photoVerified ?? true}
+                  onChange={(e) =>
+                    setEditingPlayer((prev) => (prev ? { ...prev, photoVerified: e.target.checked } : null))
+                  }
+                  className="rounded bg-black border-white/20 text-club-primary"
+                />
+                <span className="text-slate-300 font-medium select-none">
+                  Mark Player Headshot as Verified &amp; Authentic
+                </span>
+              </label>
+            </div>
+
+            {/* Profile Fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-slate-400 block mb-1">First Name</label>
@@ -365,14 +601,14 @@ export function SquadAdminClient({
               <button
                 type="button"
                 onClick={() => setEditingPlayer(null)}
-                className="px-4 py-2 bg-white/10 text-white rounded-xl text-xs"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 bg-club-primary hover:bg-club-dark text-white font-bold rounded-xl text-xs"
+                className="px-5 py-2 bg-club-primary hover:bg-red-600 text-white font-bold rounded-xl text-xs shadow transition disabled:opacity-50"
               >
                 {loading ? 'Saving...' : 'Save Player Profile'}
               </button>
@@ -388,12 +624,63 @@ export function SquadAdminClient({
             <h2 className="text-base font-bold text-white">
               {editingStaff.id ? `Edit Staff: ${editingStaff.fullName}` : 'Add Staff Member'}
             </h2>
-            <button onClick={() => setEditingStaff(null)} className="text-slate-400 hover:text-white text-xs">
+            <button
+              onClick={() => setEditingStaff(null)}
+              className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-white/5"
+            >
               Close
             </button>
           </div>
 
           <form onSubmit={handleSaveStaff} className="space-y-4 text-xs">
+            {/* Staff Photo Section */}
+            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
+              <label className="text-white font-bold block">Staff Headshot Photo</label>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-800 border-2 border-white/15 shrink-0 flex items-center justify-center">
+                  {editingStaff.photoUrl ? (
+                    <img
+                      src={editingStaff.photoUrl}
+                      alt={editingStaff.fullName || 'Staff'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-6 h-6 text-slate-500" />
+                  )}
+                </div>
+
+                <div className="space-y-2 flex-1">
+                  <input
+                    ref={staffFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDeviceStaffPhoto}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isCompressingPhoto}
+                      onClick={() => staffFileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg bg-club-primary hover:bg-red-600 text-white text-xs font-bold flex items-center gap-1.5 transition"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{isCompressingPhoto ? 'Processing...' : 'Upload Photo'}</span>
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="Or enter photo URL..."
+                      value={editingStaff.photoUrl ?? ''}
+                      onChange={(e) =>
+                        setEditingStaff((prev) => (prev ? { ...prev, photoUrl: e.target.value } : null))
+                      }
+                      className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-white font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-slate-400 block mb-1">Full Name</label>
@@ -457,7 +744,7 @@ export function SquadAdminClient({
             <div>
               <label className="text-slate-400 block mb-1">Biography (English)</label>
               <textarea
-                rows={3}
+                rows={2}
                 required
                 value={editingStaff.biographyEn ?? ''}
                 onChange={(e) => setEditingStaff({ ...editingStaff, biographyEn: e.target.value })}
@@ -469,14 +756,14 @@ export function SquadAdminClient({
               <button
                 type="button"
                 onClick={() => setEditingStaff(null)}
-                className="px-4 py-2 bg-white/10 text-white rounded-xl text-xs"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 bg-club-primary hover:bg-club-dark text-white font-bold rounded-xl text-xs"
+                className="px-5 py-2 bg-club-primary hover:bg-red-600 text-white font-bold rounded-xl text-xs shadow transition disabled:opacity-50"
               >
                 {loading ? 'Saving...' : 'Save Staff Profile'}
               </button>
@@ -493,6 +780,7 @@ export function SquadAdminClient({
               <thead className="bg-black/30 text-slate-400 uppercase font-mono border-b border-white/5">
                 <tr>
                   <th className="py-3 px-3 text-center">#</th>
+                  <th className="py-3 px-3">Photo</th>
                   <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-3">Position</th>
                   <th className="py-3 px-3">Role</th>
@@ -500,14 +788,26 @@ export function SquadAdminClient({
                   <th className="py-3 px-3 text-center">Captain</th>
                   <th className="py-3 px-3 text-center">Spotlight</th>
                   <th className="py-3 px-3 text-center">Status</th>
-                  <th className="py-3 px-3 text-center">Action</th>
+                  <th className="py-3 px-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300">
-                {initialPlayers.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/5">
+                {players.map((p) => (
+                  <tr key={p.id} className="hover:bg-white/5 transition">
                     <td className="py-3 px-3 text-center font-mono font-bold text-white">
                       {p.shirtNumber ?? '-'}
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-800 border border-white/20 flex items-center justify-center relative">
+                        {p.photoUrl ? (
+                          <img src={p.photoUrl} alt={p.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] font-mono font-bold text-slate-400">#{p.shirtNumber ?? '3K'}</span>
+                        )}
+                        {p.photoVerified && (
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-black" />
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
                       <span>{p.fullName}</span>
@@ -532,16 +832,26 @@ export function SquadAdminClient({
                       </span>
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <button
-                        onClick={() => {
-                          setEditingPlayer(p);
-                          setEditingStaff(null);
-                        }}
-                        className="p-1.5 bg-white/5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition"
-                        title="Edit player"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            setEditingPlayer(p);
+                            setEditingStaff(null);
+                          }}
+                          className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition"
+                          title="Edit player"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          disabled={deletingId === p.id}
+                          onClick={() => handleDeletePlayer(p.id, p.fullName)}
+                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg text-rose-300 hover:text-rose-200 transition disabled:opacity-50"
+                          title="Delete player"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -558,17 +868,27 @@ export function SquadAdminClient({
             <table className="w-full text-left text-xs">
               <thead className="bg-black/30 text-slate-400 uppercase font-mono border-b border-white/5">
                 <tr>
+                  <th className="py-3 px-3">Photo</th>
                   <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-4">Role Title</th>
                   <th className="py-3 px-3">Category</th>
                   <th className="py-3 px-3 text-center">Order</th>
                   <th className="py-3 px-3 text-center">Status</th>
-                  <th className="py-3 px-3 text-center">Action</th>
+                  <th className="py-3 px-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300">
-                {initialStaff.map((s) => (
-                  <tr key={s.id} className="hover:bg-white/5">
+                {staff.map((s) => (
+                  <tr key={s.id} className="hover:bg-white/5 transition">
+                    <td className="py-3 px-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-800 border border-white/20 flex items-center justify-center">
+                        {s.photoUrl ? (
+                          <img src={s.photoUrl} alt={s.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-4 h-4 text-slate-400" />
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 font-bold text-white">{s.fullName}</td>
                     <td className="py-3 px-4 text-club-accent font-medium">{s.roleTitleEn}</td>
                     <td className="py-3 px-3 font-mono text-[11px] text-slate-400">{s.category}</td>
@@ -583,16 +903,26 @@ export function SquadAdminClient({
                       </span>
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <button
-                        onClick={() => {
-                          setEditingStaff(s);
-                          setEditingPlayer(null);
-                        }}
-                        className="p-1.5 bg-white/5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition"
-                        title="Edit staff member"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            setEditingStaff(s);
+                            setEditingPlayer(null);
+                          }}
+                          className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition"
+                          title="Edit staff member"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          disabled={deletingId === s.id}
+                          onClick={() => handleDeleteStaff(s.id, s.fullName)}
+                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg text-rose-300 hover:text-rose-200 transition disabled:opacity-50"
+                          title="Delete staff member"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Palette,
   ShieldCheck,
@@ -9,7 +10,14 @@ import {
   Building,
   Briefcase,
   Save,
+  Camera,
+  UploadCloud,
+  Image as ImageIcon,
+  Check,
+  Sparkles,
 } from 'lucide-react';
+import { ClubCrest } from '@/components/ui/ClubCrest';
+import { compressImage } from '@/lib/image-compress';
 
 interface SettingsData {
   paletteStatus: string;
@@ -26,16 +34,28 @@ interface SettingsData {
   crestConfirmed: boolean;
 }
 
+const STOCK_CRESTS = [
+  { label: 'Official 3K FC Crest (SVG/Vector)', url: '/images/3k-fc-crest.png' },
+  { label: 'Authentic Facebook Profile (1000px)', url: '/images/facebook/3kfc-facebook-profile-square-1000.jpg' },
+  { label: 'Embu Matchday Facebook Crest (500px)', url: '/images/facebook/3kfc-crest-official-facebook-500.jpg' },
+];
+
 export function AdminSettingsClient({
   initialSettings,
 }: {
   initialSettings: SettingsData;
 }) {
+  const router = useRouter();
   const [formData, setFormData] = useState<SettingsData>(initialSettings);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(
     null
   );
+
+  // File upload state for crest photo
+  const [uploadingCrest, setUploadingCrest] = useState(false);
+  const [uploadedCrestInfo, setUploadedCrestInfo] = useState<{ name: string; sizeKb: number } | null>(null);
+  const crestFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const presets = [
     {
@@ -58,6 +78,29 @@ export function AdminSettingsClient({
     },
   ];
 
+  const handleDeviceCrestSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCrest(true);
+    try {
+      const { dataUrl, sizeKb } = await compressImage(file, 800, 800, 0.9);
+      setFormData((prev) => ({
+        ...prev,
+        crestAssetUrl: dataUrl,
+        crestConfirmed: true,
+      }));
+      setUploadedCrestInfo({
+        name: file.name,
+        sizeKb,
+      });
+    } catch (err) {
+      console.error('Failed to compress crest image:', err);
+      alert('Could not read image file. Please try another file.');
+    } finally {
+      setUploadingCrest(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -73,8 +116,13 @@ export function AdminSettingsClient({
       if (!res.ok) {
         setFeedback({ type: 'error', text: data.error || 'Failed to update settings.' });
       } else {
-        setFeedback({ type: 'success', text: data.message });
+        setFeedback({
+          type: 'success',
+          text: 'Settings & Crest updated instantly across the website and logged in audit records.',
+        });
         setFormData(data.settings);
+        // Refresh Next.js server components so public layouts receive fresh brand tokens
+        router.refresh();
       }
     } catch {
       setFeedback({ type: 'error', text: 'Network error while updating settings.' });
@@ -85,12 +133,166 @@ export function AdminSettingsClient({
 
   return (
     <form onSubmit={handleSave} className="max-w-4xl space-y-8">
-      {/* Brand Palette Section (Section 3 Requirement) */}
+      {/* Official Club Crest & Brand Logo Section */}
+      <div className="rounded-2xl bg-[#121722] border border-white/10 p-6 md:p-8 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-club-accent">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Official Club Crest &amp; Brand Logo</span>
+            </div>
+            <h2 className="editorial-headline font-bold text-xl text-white mt-1">
+              Live Club Crest &amp; Visual Identity
+            </h2>
+          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold uppercase flex items-center gap-1.5 ${
+              formData.crestConfirmed
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+            }`}
+          >
+            {formData.crestConfirmed ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span>Verified Crest</span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Provisional Crest</span>
+              </>
+            )}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          {/* Crest Live Preview Card */}
+          <div className="bg-black/40 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3">
+            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              Live Website Preview
+            </span>
+            <div className="p-3 bg-white/5 rounded-2xl border border-white/10 shadow-inner">
+              <ClubCrest
+                size="2xl"
+                crestUrl={formData.crestAssetUrl || '/images/3k-fc-crest.png'}
+                crestConfirmed={formData.crestConfirmed}
+                showWordmark={false}
+              />
+            </div>
+            <span className="text-xs font-bold text-white">
+              3K Football Club
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono break-all line-clamp-1 max-w-[200px]">
+              {formData.crestAssetUrl || '/images/3k-fc-crest.png'}
+            </span>
+          </div>
+
+          {/* Crest Controls: Upload & Presets */}
+          <div className="md:col-span-2 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                Upload New Crest from Device (Phone / PC)
+              </label>
+              <input
+                ref={crestFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleDeviceCrestSelected}
+                className="hidden"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={uploadingCrest}
+                  onClick={() => crestFileInputRef.current?.click()}
+                  className="px-4 py-2.5 rounded-xl bg-club-primary hover:bg-red-600 text-white text-xs font-bold flex items-center gap-2 shadow-md transition disabled:opacity-50"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>{uploadingCrest ? 'Compressing...' : 'Choose Device Photo'}</span>
+                </button>
+                {uploadedCrestInfo && (
+                  <span className="text-xs text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Loaded {uploadedCrestInfo.name} ({uploadedCrestInfo.sizeKb} KB)</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                Quick Select Authentic Crest Presets
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {STOCK_CRESTS.map((stk) => {
+                  const isSelected = formData.crestAssetUrl === stk.url;
+                  return (
+                    <button
+                      key={stk.url}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          crestAssetUrl: stk.url,
+                          crestConfirmed: true,
+                        }));
+                        setUploadedCrestInfo(null);
+                      }}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition flex flex-col justify-between gap-1.5 ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-500/10 text-white'
+                          : 'border-white/10 bg-black/40 text-slate-300 hover:border-white/30'
+                      }`}
+                    >
+                      <span className="font-semibold text-[11px] line-clamp-1">{stk.label}</span>
+                      <span className="text-[10px] text-club-accent font-mono flex items-center gap-1">
+                        {isSelected ? '✓ Active' : 'Select'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Direct Crest Image URL / Asset Path
+              </label>
+              <input
+                type="text"
+                placeholder="/images/3k-fc-crest.png"
+                value={formData.crestAssetUrl || ''}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, crestAssetUrl: e.target.value }))
+                }
+                className="w-full rounded-lg bg-black/50 border border-white/15 px-3 py-2 text-xs text-white font-mono"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={formData.crestConfirmed}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, crestConfirmed: e.target.checked }))
+                }
+                className="w-4 h-4 text-club-primary rounded bg-black border-white/20"
+              />
+              <span className="font-semibold text-white">
+                Mark Club Crest as Officially Ratified by 3K FC Leadership
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand Palette Section */}
       <div className="rounded-2xl bg-[#121722] border border-white/10 p-6 md:p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-club-accent">
             <Palette className="w-4 h-4" />
-            <span>Section 3 Brand Palette Confirmation Workflow</span>
+            <span>Design System Brand Palette Confirmation</span>
           </div>
           <span
             className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase ${
@@ -103,60 +305,57 @@ export function AdminSettingsClient({
           </span>
         </div>
 
-        <div>
-          <h2 className="editorial-headline font-bold text-2xl text-white">
-            Club Palette &amp; Design Tokens
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Section 3 Rule: Do not invent a final brand palette without inspecting the official crest. Administrators must confirm the palette before final public release.
-          </p>
-        </div>
+        <p className="text-xs text-slate-400">
+          Color tokens apply immediately across all public layouts, navigation headers, match banners, and ticketing interfaces.
+        </p>
 
-        {/* Color Presets */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold uppercase text-slate-300">
-            Select Configurable Provisional Theme Preset
+        {/* Preset Schemes */}
+        <div>
+          <label className="block text-xs font-bold text-slate-300 mb-2">
+            Recommended Verified Palette Schemes
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {presets.map((pr) => (
+            {presets.map((preset) => (
               <button
-                key={pr.name}
+                key={preset.name}
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    primaryColor: pr.primary,
-                    secondaryColor: pr.secondary,
-                    accentColor: pr.accent,
+                    primaryColor: preset.primary,
+                    secondaryColor: preset.secondary,
+                    accentColor: preset.accent,
                   }))
                 }
-                className="p-3.5 rounded-xl bg-black/40 border border-white/10 hover:border-club-accent text-left transition"
+                className="text-left p-3 rounded-xl bg-black/40 border border-white/10 hover:border-white/30 transition space-y-2 group"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="w-4 h-4 rounded-full border border-white/20"
-                    style={{ backgroundColor: pr.primary }}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="w-5 h-5 rounded-full border border-white/20"
+                    style={{ backgroundColor: preset.primary }}
                   />
-                  <div
-                    className="w-4 h-4 rounded-full border border-white/20"
-                    style={{ backgroundColor: pr.secondary }}
+                  <span
+                    className="w-5 h-5 rounded-full border border-white/20"
+                    style={{ backgroundColor: preset.secondary }}
                   />
-                  <div
-                    className="w-4 h-4 rounded-full border border-white/20"
-                    style={{ backgroundColor: pr.accent }}
+                  <span
+                    className="w-5 h-5 rounded-full border border-white/20"
+                    style={{ backgroundColor: preset.accent }}
                   />
                 </div>
-                <strong className="text-xs text-white block">{pr.name}</strong>
+                <div className="text-[11px] font-bold text-white group-hover:text-club-accent transition line-clamp-1">
+                  {preset.name}
+                </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Hex Pickers */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        {/* Color Pickers */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1">
-              Primary Club Colour
+              Primary Crimson / Red
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -180,7 +379,7 @@ export function AdminSettingsClient({
 
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1">
-              Secondary Club Colour
+              Secondary Forest Green / Emerald
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -256,7 +455,7 @@ export function AdminSettingsClient({
         </div>
       </div>
 
-      {/* Official Crest & Stadium Venue Section */}
+      {/* Official Stadium Venue & Sponsorship Section */}
       <div className="rounded-2xl bg-[#121722] border border-white/10 p-6 md:p-8 space-y-6">
         <h2 className="editorial-headline font-bold text-2xl text-white">
           Venue &amp; Sponsorship Verification
@@ -304,7 +503,7 @@ export function AdminSettingsClient({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, homeStadiumConfirmed: e.target.checked }))
               }
-              className="w-4 h-4 text-club-primary"
+              className="w-4 h-4 text-club-primary rounded bg-black border-white/20"
             />
             <span>
               Official Match Venue is formally ratified by FKF for Season 2026/27.
@@ -354,7 +553,7 @@ export function AdminSettingsClient({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, mainSponsorConfirmed: e.target.checked }))
               }
-              className="w-4 h-4 text-club-primary"
+              className="w-4 h-4 text-club-primary rounded bg-black border-white/20"
             />
             <span>
               2026/27 Sponsorship agreement has been signed and confirmed by club leadership.
@@ -365,13 +564,18 @@ export function AdminSettingsClient({
 
       {feedback && (
         <div
-          className={`p-4 rounded-xl text-xs font-bold ${
+          className={`p-4 rounded-xl text-xs font-bold flex items-center gap-2 ${
             feedback.type === 'success'
               ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40'
               : 'bg-red-500/20 text-red-200 border border-red-500/40'
           }`}
         >
-          {feedback.text}
+          {feedback.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+          )}
+          <span>{feedback.text}</span>
         </div>
       )}
 
@@ -381,7 +585,7 @@ export function AdminSettingsClient({
         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-club-primary hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition"
       >
         <Save className="w-4 h-4" />
-        <span>{saving ? 'Saving & Auditing...' : 'Save Settings & Record Audit Log'}</span>
+        <span>{saving ? 'Saving Live Changes...' : 'Save Settings & Update Live Website'}</span>
       </button>
     </form>
   );

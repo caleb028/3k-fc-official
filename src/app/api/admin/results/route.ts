@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -213,6 +214,14 @@ export async function POST(req: NextRequest) {
       after: updated,
       reason: `Result published by ${admin.email}: ${before.homeClub.name} ${homeScore} - ${awayScore} ${before.awayClub.name}`,
     });
+
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/fixtures');
+    revalidatePath('/results');
+    revalidatePath('/table');
+    revalidatePath('/news');
+    revalidatePath('/admin/results');
 
     return NextResponse.json({ success: true, fixture: updated });
   } catch (err) {

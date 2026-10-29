@@ -38,6 +38,7 @@ export default async function AdminSquadPage() {
     isCaptain: p.isCaptain,
     isSpotlight: p.isSpotlight,
     isActive: p.isActive,
+    photoUrl: p.photoUrl,
     photoVerified: p.photoVerified,
   }));
 
@@ -51,6 +52,8 @@ export default async function AdminSquadPage() {
     biographyEn: s.biographyEn,
     sortOrder: s.sortOrder,
     isActive: s.isActive,
+    photoUrl: s.photoUrl,
+    photoVerified: s.photoVerified,
   }));
 
   return (
@@ -60,7 +63,7 @@ export default async function AdminSquadPage() {
           Squad &amp; Technical Staff Management
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Manage first-team players, shirt numbers, positions, captaincy designations, coaching staff, and verified statistical profiles.
+          Manage first-team players, headshots, shirt numbers, positions, captaincy designations, coaching staff, and verified statistical profiles.
         </p>
       </div>
 

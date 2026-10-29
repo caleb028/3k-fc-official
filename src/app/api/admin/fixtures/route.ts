@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -201,6 +202,13 @@ export async function POST(req: NextRequest) {
       reason: `Staff posted upcoming match: ${created.homeClub.name} vs ${created.awayClub.name}`,
     });
 
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/fixtures');
+    revalidatePath('/results');
+    revalidatePath('/match-centre');
+    revalidatePath('/admin/fixtures');
+
     return NextResponse.json({ success: true, fixture: created });
   } catch (err) {
     return NextResponse.json(
@@ -262,6 +270,13 @@ export async function PATCH(req: NextRequest) {
       reason: `Staff updated match fixture ${updated.slug}`,
     });
 
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/fixtures');
+    revalidatePath('/results');
+    revalidatePath('/match-centre');
+    revalidatePath('/admin/fixtures');
+
     return NextResponse.json({ success: true, fixture: updated });
   } catch (err) {
     return NextResponse.json(
@@ -298,6 +313,13 @@ export async function DELETE(req: NextRequest) {
       before: existing,
       reason: `Staff deleted fixture: ${existing.slug}`,
     });
+
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/fixtures');
+    revalidatePath('/results');
+    revalidatePath('/match-centre');
+    revalidatePath('/admin/fixtures');
 
     return NextResponse.json({ success: true, message: 'Fixture deleted.' });
   } catch (err) {

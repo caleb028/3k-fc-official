@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -26,7 +27,15 @@ export async function POST(req: NextRequest) {
     const raw = await req.json();
     const parsed = settingsSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid settings format.', issues: parsed.error.flatten() }, { status: 400 });
+      revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/team');
+    revalidatePath('/fixtures');
+    revalidatePath('/results');
+    revalidatePath('/news');
+    revalidatePath('/admin/settings');
+
+    return NextResponse.json({ error: 'Invalid settings format.', issues: parsed.error.flatten() }, { status: 400 });
     }
 
     const previous = await prisma.clubSettings.findUnique({ where: { id: 'default' } });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -92,6 +93,13 @@ export async function POST(req: NextRequest) {
         after: updated,
         reason: `Live match update by ${admin.email}: status ${updated.status}, score ${updated.homeScore ?? 0}-${updated.awayScore ?? 0}`,
       });
+
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+      revalidatePath('/fixtures');
+      revalidatePath('/results');
+      revalidatePath('/match-centre');
+      revalidatePath('/admin/match-centre');
 
       return NextResponse.json({ success: true, fixture: updated });
     }

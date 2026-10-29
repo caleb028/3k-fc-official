@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -66,6 +67,11 @@ export async function POST(req: NextRequest) {
           reason: `Sponsor ${updated.businessName} updated by ${admin.email}`,
         });
 
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/partners');
+        revalidatePath('/admin/sponsors');
+
         return NextResponse.json({ success: true, sponsor: updated });
       } else {
         const created = await prisma.sponsor.create({
@@ -93,6 +99,11 @@ export async function POST(req: NextRequest) {
           after: created,
           reason: `New sponsor registered: ${created.businessName} (${created.category})`,
         });
+
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/partners');
+        revalidatePath('/admin/sponsors');
 
         return NextResponse.json({ success: true, sponsor: created });
       }

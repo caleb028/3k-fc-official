@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Newspaper,
   Plus,
@@ -109,6 +110,7 @@ export function NewsAdminClient({
   initialArticles: ArticleRecord[];
   categories: CategoryOption[];
 }) {
+  const router = useRouter();
   const [articles, setArticles] = useState<ArticleRecord[]>(initialArticles);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -239,6 +241,7 @@ export function NewsAdminClient({
         success: true,
       });
       setPhotoEditModalArticle(null);
+      router.refresh();
     } catch (err: any) {
       setMessage({ text: err.message || 'Failed to update photo', success: false });
     } finally {
@@ -282,7 +285,11 @@ export function NewsAdminClient({
         text: 'Team news published successfully! It is now live on the homepage hero and news feed.',
         success: true,
       });
+      if (data.article) {
+        setArticles([data.article, ...articles]);
+      }
       setShowAddModal(false);
+      router.refresh();
 
       // Reset form
       setHeadlineEn('');
@@ -322,6 +329,7 @@ export function NewsAdminClient({
         text: !currentFeatured ? 'Article promoted to Homepage Hero.' : 'Article removed from Homepage Hero.',
         success: true,
       });
+      router.refresh();
     } catch (err: any) {
       setMessage({ text: err.message, success: false });
     }
@@ -336,6 +344,7 @@ export function NewsAdminClient({
 
       setArticles(articles.filter((art) => art.id !== id));
       setMessage({ text: 'Article deleted.', success: true });
+      router.refresh();
     } catch (err: any) {
       setMessage({ text: err.message, success: false });
     }

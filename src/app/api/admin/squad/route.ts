@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -86,6 +87,11 @@ export async function POST(req: NextRequest) {
           reason: `Player profile updated for ${updated.fullName} by ${admin.email}`,
         });
 
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/team');
+        revalidatePath('/admin/squad');
+
         return NextResponse.json({ success: true, player: updated });
       } else {
         const created = await prisma.player.create({
@@ -119,6 +125,11 @@ export async function POST(req: NextRequest) {
           after: created,
           reason: `New squad player registered: ${created.fullName} (#${created.shirtNumber ?? 'N/A'})`,
         });
+
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/team');
+        revalidatePath('/admin/squad');
 
         return NextResponse.json({ success: true, player: created });
       }
@@ -160,6 +171,11 @@ export async function POST(req: NextRequest) {
           reason: `Technical staff member updated: ${updated.fullName} (${updated.roleTitleEn})`,
         });
 
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/team');
+        revalidatePath('/admin/squad');
+
         return NextResponse.json({ success: true, staff: updated });
       } else {
         const created = await prisma.staffMember.create({
@@ -187,6 +203,11 @@ export async function POST(req: NextRequest) {
           reason: `New staff member registered: ${created.fullName} (${created.roleTitleEn})`,
         });
 
+        revalidatePath('/', 'layout');
+        revalidatePath('/');
+        revalidatePath('/team');
+        revalidatePath('/admin/squad');
+
         return NextResponse.json({ success: true, staff: created });
       }
     }
@@ -196,6 +217,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to save squad entity' },
       { status: 403 }
+    );
+  }
+}
+
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const admin = await requireAdminPermission('squad', 'delete');
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const entityType = searchParams.get('entityType') || 'PLAYER';
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required.' }, { status: 400 });
+    }
+
+    if (entityType === 'PLAYER') {
+      const existing = await prisma.player.findUnique({ where: { id } });
+      if (!existing) {
+        return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+      }
+      await prisma.player.delete({ where: { id } });
+      await recordAuditLog({
+        actorId: admin.id,
+        actorEmail: admin.email,
+        actorRole: admin.roles[0],
+        action: 'PLAYER_DELETED',
+        targetType: 'Player',
+        targetId: id,
+        before: existing,
+        reason: `Player ${existing.fullName} deleted by ${admin.email}`,
+      });
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+      revalidatePath('/team');
+      revalidatePath('/admin/squad');
+      return NextResponse.json({ success: true, message: 'Player removed.' });
+    }
+
+    if (entityType === 'STAFF') {
+      const existing = await prisma.staffMember.findUnique({ where: { id } });
+      if (!existing) {
+        return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
+      }
+      await prisma.staffMember.delete({ where: { id } });
+      await recordAuditLog({
+        actorId: admin.id,
+        actorEmail: admin.email,
+        actorRole: admin.roles[0],
+        action: 'STAFF_MEMBER_DELETED',
+        targetType: 'StaffMember',
+        targetId: id,
+        before: existing,
+        reason: `Staff member ${existing.fullName} deleted by ${admin.email}`,
+      });
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+      revalidatePath('/team');
+      revalidatePath('/admin/squad');
+      return NextResponse.json({ success: true, message: 'Staff member removed.' });
+    }
+
+    return NextResponse.json({ error: 'Unknown entityType' }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to delete squad member' },
+      { status: 400 }
     );
   }
 }

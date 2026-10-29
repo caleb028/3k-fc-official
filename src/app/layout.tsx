@@ -98,7 +98,10 @@ export default async function RootLayout({
           <main id="main-content" className="flex-1 pb-16 md:pb-0">
             {children}
           </main>
-          <PublicFooter />
+          <PublicFooter
+            crestUrl={settings?.crestAssetUrl || '/images/3k-fc-crest.png'}
+            crestConfirmed={settings?.crestConfirmed ?? true}
+          />
         </LanguageProvider>
       </body>
     </html>

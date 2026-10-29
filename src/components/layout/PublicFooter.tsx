@@ -6,7 +6,13 @@ import { usePathname } from 'next/navigation';
 import { MapPin, Mail, Phone, ShieldCheck, ExternalLink } from 'lucide-react';
 import { ClubCrest } from '@/components/ui/ClubCrest';
 
-export function PublicFooter() {
+export function PublicFooter({
+  crestUrl,
+  crestConfirmed,
+}: {
+  crestUrl?: string | null;
+  crestConfirmed?: boolean;
+} = {}) {
   const pathname = usePathname();
   if (pathname?.startsWith('/admin')) {
     return null;
@@ -58,7 +64,7 @@ export function PublicFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
         {/* Col 1-2: Club Identity */}
         <div className="lg:col-span-2 space-y-4">
-          <ClubCrest size="md" showWordmark={true} darkText={true} />
+          <ClubCrest size="md" crestUrl={crestUrl} crestConfirmed={crestConfirmed ?? true} showWordmark={true} darkText={true} />
           <p className="text-sm text-slate-600 leading-relaxed max-w-md">
             The official digital home of <strong>3K Football Club (Embu County, Kenya)</strong>.
             Proudly representing Mount Kenya and competing in the <strong>2026/27 FKF Premier League</strong>.

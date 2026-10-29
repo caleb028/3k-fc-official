@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireAdminPermission } from '@/lib/auth';
@@ -123,6 +124,12 @@ export async function POST(req: NextRequest) {
       reason: 'Editorial story published via admin dashboard',
     });
 
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/news');
+    revalidatePath(`/news/${created.slug}`);
+    revalidatePath('/admin/news');
+
     return NextResponse.json({ success: true, article: created });
   } catch (err) {
     return NextResponse.json(
@@ -158,7 +165,7 @@ export async function PATCH(req: NextRequest) {
       data: {
         ...(updates.categoryId ? { categoryId: updates.categoryId } : {}),
         ...(updates.authorName ? { authorName: updates.authorName } : {}),
-        ...(updates.featuredImageUrl !== undefined ? { featuredImageUrl: updates.featuredImageUrl } : {}),
+        ...(updates.featuredImageUrl !== undefined ? { featuredImageUrl: updates.featuredImageUrl, isPlaceholderImage: false } : {}),
         ...(updates.isFeatured !== undefined ? { isFeatured: updates.isFeatured } : {}),
         ...(updates.status ? { status: updates.status } : {}),
       },
@@ -194,6 +201,12 @@ export async function PATCH(req: NextRequest) {
       after: updated,
       reason: `Staff updated article ${updated.slug}`,
     });
+
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/news');
+    revalidatePath(`/news/${updated.slug}`);
+    revalidatePath('/admin/news');
 
     return NextResponse.json({ success: true, article: updated });
   } catch (err) {
@@ -233,6 +246,12 @@ export async function DELETE(req: NextRequest) {
       before: existing,
       reason: `Staff deleted article ${existing.slug}`,
     });
+
+    revalidatePath('/', 'layout');
+    revalidatePath('/');
+    revalidatePath('/news');
+    revalidatePath(`/news/${existing.slug}`);
+    revalidatePath('/admin/news');
 
     return NextResponse.json({ success: true, message: 'Article deleted.' });
   } catch (err) {
